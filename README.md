@@ -29,7 +29,7 @@ Tigard 是一款基于 **FT2232 芯片** 的多功能调试器，具备以下特
 
 ### 工作原理
 
-- FT232 相当于一个**不可编程的单片机**
+- FT2232 相当于一个**不可编程的单片机**
 - 启动时会检查外部 EEPROM，读取配置并按照配置工作
 - FT2232 带有两组总线：**ADBUS** 和 **BDBUS**，功能完全相同
 - 通过配置，可将总线设为不同接口：串口、JTAG 等
@@ -143,6 +143,7 @@ FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功
 | Device | 选靠下的选项（A 口为串口，B 口为 JTAG） |
 | Static Pins | Olimex ARM-USB-OCD |
 | JTAG 速度 | 从低到高测试，最高 30M |
+
 ![TJP新建项目](image/image9.png)
 
 #### 3. 识别芯片
@@ -185,9 +186,9 @@ FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功
 - 添加到监视窗口
 - 添加到波形区
 - 设置输出为 0 / 1 / 高阻态（EXTEST 模式）
+---
 ![TJP设置输出](image/image16.png)
 
----
 
 ## 七、Linux 下的 urjtag
 
