@@ -1,0 +1,1 @@
+本资料由bili无序熵增提供，设备手册会在bili上面一直更新，手册地址：https://www.bilibili.com/opus/1098674972452192305
