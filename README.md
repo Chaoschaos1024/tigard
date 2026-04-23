@@ -121,6 +121,7 @@ FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功
 
 > 这是一款 **JTAG 逆向软件**，官网：[http://www.topjtag.com/probe/](http://www.topjtag.com/probe/)  
 > 非免费，但有试用期。JTAG 最初用于边界扫描，后续扩展出烧录等功能，该软件利用该特性，直接调用芯片的ic位置。
+
 ![TJP软件截图](image/image6.png)
 
 ### 示例硬件
@@ -176,6 +177,7 @@ FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功
 | SAMPLE | 不干扰设备操作，动态观察引脚（只读） |
 | EXTEST | 控制输出、观察输入，测试外围电路 |
 | INTEST | 测试芯片内部逻辑（部分芯片支持） |
+
 ![Jtag模式设置](image/image15.png)
 > 要修改输出，选择 **EXTEST**；仅观察电平选 **SAMPLE**。
 
