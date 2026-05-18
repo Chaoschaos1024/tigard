@@ -49,10 +49,15 @@ Tigard 是一款基于 **FT2232 芯片** 的多功能调试器，具备以下特
 ### 电平转换
 
 FT2232 仅支持 **3.3V** 外部电压。为保证兼容性并保护芯片，Tigard 使用了 **74HC245 电平转换芯片**，通过开关控制转换侧电压，以适配不同设备。
+需要注意的是开关上的VTGT档，其他几个档位是tigard设置电平转换ic的同时，在VTGT引脚上输出对应设置的电压，相当于可以外供电，VTGT档位会直接使用VTGT引脚上的电压给电平转换芯片供电，千万小心，过流和电压不同都有可能烧掉你的tigard或者调试板。
+![电平切换开关](image/image36.png){width=25%}
+
 
 ### 模式切换开关
 
 板载开关用于在 **SWD / JTAG** 之间切换，同时也影响 I2C 和 SPI。其原理是短接 BDBUS1 和 BDBUS2。
+MODE开关不影响串口的使用，但是如果一直连不上swd或者jtag上面的设备，最好是检查下这个开关是否在正确的档位。
+![模式切换开关](image/image37.png){width=25%}
 
 ### JTAG 与 SPI 的相似性
 
@@ -63,13 +68,13 @@ FT2232 仅支持 **3.3V** 外部电压。为保证兼容性并保护芯片，Tig
 | TCK | SCK | 时钟 |
 | TMS | CS | 输出 |
 
-> 有趣的是：JTAG 和 SPI 都是 **输入量 = 输出量** 的协议。可以用 JTAG 模拟 SPI 总线。
+> 有趣的是：JTAG 和 SPI 都是 **输入量 = 输出量** 的协议。基本上可以说JTAG是SPI的一个修改版本，基本上就是加了一个状态机。
 
 ### SWD 模拟
 
-- SWCLK → TCK（时钟）
-- SWDIO → TDO + TDI（双向）
-- 短接设备上的 SWDIO 到 TDI 和 TDO 即可
+- SWD-SWCLK → JTAG-TCK（时钟）
+- SWD-SWDIO（双向） → JTAG-TDO（输出） + JTAG-TDI（输入）
+- 把MODE开关打到SWD档即可短接JTAG-TDO + JTAG-TDI
 
 ### I2C 模拟
 
@@ -89,20 +94,19 @@ FT2232 仅支持 **3.3V** 外部电压。为保证兼容性并保护芯片，Tig
 | 设备 | 说明 |
 |------|------|
 | USB Serial Port | 标准串口（含 DCD、DSR、DTR、CTS、RTS） |
-| USB Serial Converter A | 与上述串口本质相同 |
+| USB Serial Converter A | 与上述串口本质相同，但是会被分配串口号 |
 | USB Serial Converter B | JTAG 接口（此接口是被设置为MPSSE模式，不会被分配串口号） |
 ---
-![Tigard串口定义照](image/image4.png)
-![Tigard Jtag定义照](image/image5.png)
 
 ## 四、串口功能
 
 Tigard 的串口引出为 **9-pin 接口**，包含 DTR 等信号（廉价工具常省略）。DTR 常被用作单片机复位信号。
 
 - **最高波特率**：12 Mbit
-- **优点**：免驱、误码率低、使用体验极佳
-- **结论**：需要稳定耐用的串口芯片，首选 FT 系列
+- **优点**：免驱、误码率低
 
+**串口定义**
+![Tigard串口定义照](image/image45.png)
 
 ---
 
@@ -113,6 +117,9 @@ FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功
 - FPGA
 - AVR 单片机
 - 博通芯片
+
+**JTAG接口定义**
+![Tigard Jtag定义照](image/image44.png)
 
 > 基本上，该接口对任意 JTAG 设备都管用。
 
@@ -143,7 +150,7 @@ FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功
 |------|------|
 | Connection | Generic FTDI FT2232 |
 | Device | 选靠下的选项（A 口为串口，B 口为 JTAG） |
-| Static Pins | Olimex ARM-USB-OCD |
+| Static Pins | **Olimex ARM-USB-OCD** |
 | JTAG 速度 | 从低到高测试，最高 30M |
 
 ![TJP新建项目](image/image9.png)
@@ -189,8 +196,9 @@ FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功
 - 添加到监视窗口
 - 添加到波形区
 - 设置输出为 0 / 1 / 高阻态（EXTEST 模式）
----
+
 ![TJP设置输出](image/image16.png)
+---
 
 
 ## 七、Linux 下的 urjtag
@@ -234,8 +242,11 @@ detect                                            # 检测设备
 
 ## 八、烧录 SPI Flash / EEPROM
 
-Tigard 板载 **2×4 排针**，专为 SPI Flash 和 EEPROM 设计。
-
+Tigard 板载 **2×4 排针**，专为 SPI Flash 和 EEPROM 设计，引脚正对应各种8脚格式的存储IC。
+**SPI Flash的引脚定义**
+![SPI FLASH](image/image41.png){width=25%}
+**EEPROM的引脚定义**（同组排针，丝印在**底部**）
+![EEPROM](image/image40.png){width=25%}
 ### SPI Flash 烧录（推荐使用 flashrom）
 
 #### Windows 准备
@@ -247,6 +258,7 @@ Tigard 板载 **2×4 排针**，专为 SPI Flash 和 EEPROM 设计。
 
 #### 常用命令
 
+以下使用的是Power shell来运行
 ```powershell
 # 查看帮助
 .\flashrom.exe -help
@@ -261,8 +273,8 @@ Tigard 板载 **2×4 排针**，专为 SPI Flash 和 EEPROM 设计。
 #### Linux 下使用
 
 ```bash
-sudo apt install flashrom
-flashrom -p ft2232_spi:type=2232H,port=B,divisor=4 -r flash.bin
+sudo apt install flashrom #安装flashrom
+flashrom -p ft2232_spi:type=2232H,port=B,divisor=4 -r flash.bin #烧录flash.bin文件
 ```
 
 > **参数说明**：`divisor` 为分频值，`0` 速度最高，`4` 为官方推荐。部分 SPI Flash 不支持过高速度，建议从高到低依次尝试。
@@ -275,7 +287,7 @@ flashrom -p ft2232_spi:type=2232H,port=B,divisor=4 -r flash.bin
 
 - 芯片第一脚附近有圆点，夹子灰排线的红线对应第一脚
 - 红线靠近 JTAG 排针插入
-![EEPROM](image/image26.png)
+![EEPROM](image/image26.jpeg)
 #### 软件准备
 
 ```bash
@@ -296,6 +308,7 @@ pip install pyftdi
 #### I2C 地址计算
 
 EEPROM 的地址由地址引脚（A0、A1、A2）的电平决定。需查阅芯片数据手册，测量实际电平后计算 I2C 地址。
+
 ![EEPROM](image/image29.png)
 ---
 
@@ -310,9 +323,9 @@ EEPROM 的地址由地址引脚（A0、A1、A2）的电平决定。需查阅芯�
 | SCK | TCK |
 | MOSI | TDI |
 | MISO | TDO |
-| RST | SRST（⚠️ 注意：不能接到 TRST） |
+| RST | **SRST**（⚠️ 注意：不能接到 **TRST**） |
 
-![AVR(image/image30.png)
+![AVR ISP接口示意图](image/image30.png)
 
 ### 供电方式
 
@@ -322,11 +335,76 @@ EEPROM 的地址由地址引脚（A0、A1、A2）的电平决定。需查阅芯�
 
 ### Windows 软件
 
-使用配套软件（随附安装包）：
+使用配套软件AVRDESS（随附安装包）：
 - 编程器选择 **Tigard**
 - 无需选择端口
 - 驱动使用默认驱动即可
 ![AVR](image/image32.png)
+---
+
+## 十、小Hack
+
+板子背面有两个没有贴任何东西的0805焊盘
+- ISO焊盘，默认中间有走线短接，用刀切断之后，排针就不再向外供电了，正面电压开关自此只做参考电压为电平转换芯片供电
+![HACK1](image/image39.png)
+- Hack焊盘，默认不连接，MODE开关打到SWD模式时，默认TDO和TDI引脚之间有一个33欧姆的电阻，短接该焊盘即可短接这个电阻，SWD接口通讯不正常时可以测试下短接
+![HACK2](image/image38.png)
+---
+
+## 其他的接口
+
+### Cortex Debug (10针) 接口
+
+![CORTEX](image/image42.png){width=25%}
+
+该Cortex Debug 10针连接器同时支持JTAG和Serial Wire信号。对于基于Cortex-M处理器的设备，您可以将调试器配置为JTAG或Serial Wire（SWD）模式
+以下内容来自ARM的文档
+
+#### 10针引脚分配图
+
+![CORTEX](image/cortex.gif)
+
+##### JTAG 信号
+
+| 信号 | 连接说明 |
+| :--- | :--- |
+| **TMS** | 测试模式状态引脚 — 使用100K欧姆上拉电阻连接至VCC |
+| **TDO** | 测试数据输出引脚 |
+| **TDI** | 测试数据输入引脚 — 使用100K欧姆上拉电阻连接至VCC |
+| **TCLK** | 测试时钟引脚 — 使用100K欧姆下拉电阻连接至GND |
+| **VCC** | 正电源电压 — JTAG接口驱动器的电源 |
+| **GND** | 数字地 |
+| **nRESET** | 复位引脚 — 将此引脚连接到目标CPU的（低电平有效）复位输入端。使用100K欧姆上拉电阻连接至VCC。此为开集电极/开漏输出 |
+
+##### SWD 信号
+
+SWD模式是JTAG端口的一种不同工作模式，仅使用两个引脚进行通信。可选择使用第三个引脚来跟踪数据。JTAG引脚与SW引脚是共享的
+
+- **TCLK** 即 **SWCLK** (串行线时钟)
+- **TMS** 即 **SWDIO** (串行线调试数据输入/输出)
+- **TDO** 即 **SWO** (串行线跟踪输出)
+
+| 信号 | 连接说明 |
+| :--- | :--- |
+| **SWDIO** | 数据输入/输出引脚。使用100K欧姆上拉电阻连接至VCC |
+| **SWO** | 可选跟踪输出引脚 |
+| **SWCLK** | 时钟引脚。使用100K欧姆下拉电阻连接至GND |
+| **VCC** | 正电源电压 — JTAG接口驱动器的电源 |
+| **GND** | 数字地 |
+| **nRESET** | 复位引脚 — 将此引脚连接到目标CPU的（低电平有效）复位输入端。使用100K欧姆上拉电阻连接至VCC。此为开集电极/开漏输出 |
+
+### LA接口和IIC接口
+
+![LA port](image/image43.png){width=25%}
+
+### LA接口
+
+LA接口直接和FT2232接触，用于连接逻辑分析仪来分析FT2232和外部的通讯，可以用于测试tigard的好坏或者分析串口和JTAG通讯
+
+### IIC接口
+
+IIC接口使用SH1.0的线来进行连接，线序定义从上图，左至右依次是，GND/VCC/SDA/SCL
+
 ---
 
 ## 总结

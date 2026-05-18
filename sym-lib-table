@@ -1,3 +1,5 @@
 (sym_lib_table
-  (lib (name tigard)(type Legacy)(uri ${KIPRJMOD}/tigard.lib)(options "")(descr ""))
+	(version 7)
+	(lib (name "tigard") (type "Legacy") (uri "${KIPRJMOD}/tigard.lib") (options "") (descr ""))
+	(lib (name "tigard-cache") (type "Legacy") (uri "D:/desktop/Open_Source/tigard/tigard-github/tigard/tigard-cache.lib") (options "") (descr "旧版工程缓存库"))
 )
