@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenOCD与JTAG调试详解 - 第14讲：使用OpenOCD烧写Flash</title>
+    <style>
+        :root {
+            --primary-blue: #4A90E2;
+            --primary-green: #7ED321;
+            --primary-yellow: #F8E71C;
+            --primary-orange: #F5A623;
+            --primary-red: #D0021B;
+            --light-bg: #F0F7FF;
+            --card-bg: #FFFFFF;
+            --text-dark: #333333;
+            --text-light: #666666;
+            --border-color: #B0D0FF;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(122, 201, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(126, 211, 33, 0.1) 0%, transparent 20%);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            border: 3px double var(--primary-blue);
+            border-radius: 20px;
+            background-color: var(--card-bg);
+            box-shadow: 0 15px 35px rgba(74, 144, 226, 0.15);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-green));
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            border-bottom: 5px solid var(--primary-yellow);
+        }
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .header .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px;
+        }
+        .section {
+            margin-bottom: 50px;
+            padding: 25px;
+            border: 2px solid var(--border-color);
+            border-radius: 15px;
+            background-color: rgba(240, 247, 255, 0.5);
+            transition: transform 0.3s;
+        }
+        .section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(74, 144, 226, 0.1);
+        }
+        h2 {
+            color: var(--primary-blue);
+            border-left: 6px solid var(--primary-orange);
+            padding-left: 15px;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        h3 {
+            color: var(--primary-green);
+            margin: 15px 0 10px 0;
+            font-size: 1.4rem;
+        }
+        p {
+            margin-bottom: 15px;
+            color: var(--text-light);
+        }
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 20px;
+            color: var(--text-light);
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        th {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        tr:nth-child(even) {
+            background-color: rgba(122, 201, 255, 0.1);
+        }
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 20px 0;
+            border-left: 5px solid var(--primary-orange);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        code {
+            background-color: rgba(122, 201, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--primary-blue);
+            font-family: 'Consolas', monospace;
+        }
+        .svg-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        .svg-container svg {
+            max-width: 100%;
+            height: auto;
+        }
+        .highlight {
+            background-color: rgba(248, 231, 28, 0.2);
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .footer {
+            background: linear-gradient(135deg, var(--primary-green), var(--primary-blue));
+            color: white;
+            text-align: center;
+            padding: 25px;
+            font-size: 1.1rem;
+            border-top: 5px solid var(--primary-yellow);
+        }
+        .footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .note {
+            background-color: rgba(248, 231, 28, 0.1);
+            border-left: 4px solid var(--primary-yellow);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        .warning {
+            background-color: rgba(245, 166, 35, 0.1);
+            border-left: 4px solid var(--primary-orange);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>OpenOCD与JTAG调试详解</h1>
+            <div class="subtitle">第14讲：使用OpenOCD烧写Flash</div>
+            <div class="subtitle">flash命令集、编写与加载Flash算法、批量编程</div>
+        </header>
+
+        <main class="content">
+            <section class="section">
+                <h2>引言</h2>
+                <p>在嵌入式系统开发中，将固件程序烧写到目标设备的非易失性存储器（Flash）是至关重要的一步。OpenOCD不仅是一个强大的调试工具，也提供了完整的Flash编程能力。本讲将深入讲解如何使用OpenOCD的<code>flash</code>命令集、如何为特定Flash芯片编写和加载Flash算法，以及如何进行高效的批量编程。</p>
+                <div class="svg-container">
+                    <svg width="800" height="200" viewBox="0 0 800 200">
+                        <rect x="10" y="80" width="180" height="60" rx="10" fill="#4A90E2" stroke="#2C6FB7" stroke-width="2"/>
+                        <text x="100" y="115" text-anchor="middle" fill="white" font-size="16" font-weight="bold">OpenOCD主机</text>
+                        <polygon points="200,110 230,95 230,125" fill="#4A90E2"/>
+                        <line x1="230" y1="110" x2="270" y2="110" stroke="#4A90E2" stroke-width="3"/>
+                        <rect x="270" y="80" width="180" height="60" rx="10" fill="#7ED321" stroke="#5AAE0F" stroke-width="2"/>
+                        <text x="360" y="115" text-anchor="middle" fill="white" font-size="16" font-weight="bold">JTAG/SWD适配器</text>
+                        <polygon points="450,110 480,95 480,125" fill="#7ED321"/>
+                        <line x1="480" y1="110" x2="520" y2="110" stroke="#7ED321" stroke-width="3"/>
+                        <rect x="520" y="80" width="180" height="60" rx="10" fill="#F5A623" stroke="#D18A1A" stroke-width="2"/>
+                        <text x="610" y="115" text-anchor="middle" fill="white" font-size="16" font-weight="bold">目标芯片Flash</text>
+                        <text x="400" y="170" text-anchor="middle" fill="#666" font-size="14">Flash烧写数据流示意图</text>
+                    </svg>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>1. OpenOCD Flash命令集详解</h2>
+                <p>OpenOCD提供了一套完整的<code>flash</code>命令，用于检测、擦除、编程和验证Flash存储器。这些命令通常在OpenOCD的Telnet或GDB会话中执行。</p>
+
+                <h3>1.1 基本Flash命令</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>命令</th>
+                            <th>语法示例</th>
+                            <th>功能描述</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>flash probe</code></td>
+                            <td><code>flash probe 0</code></td>
+                            <td>探测并识别指定编号的Flash设备。</td>
+                        </tr>
+                        <tr>
+                            <td><code>flash info</code></td>
+                            <td><code>flash info 0</code></td>
+                            <td>显示Flash设备的详细信息（大小、扇区等）。</td>
+                        </tr>
+                        <tr>
+                            <td><code>flash erase_sector</code></td>
+                            <td><code>flash erase_sector 0 0 10</code></td>
+                            <td>擦除从第0扇区开始的连续11个扇区。</td>
+                        </tr>
+                        <tr>
+                            <td><code>flash erase_address</code></td>
+                            <td><code>flash erase_address 0 0x08000000 0x1000</code></td>
+                            <td>擦除从指定地址开始的一定长度区域。</td>
+                        </tr>
+                        <tr>
+                            <td><code>flash write_bank</code></td>
+                            <td><code>flash write_bank 0 firmware.bin 0</code></td>
+                            <td>将二进制文件写入Flash Bank的指定偏移地址。</td>
+                        </tr>
+                        <tr>
+                            <td><code>flash write_image</code></td>
+                            <td><code>flash write_image erase firmware.elf</code></td>
+                            <td>将镜像文件（ELF/HEX/BIN）写入Flash，可选擦除。</td>
+                        </tr>
+                        <tr>
+                            <td><code>flash verify_image</code></td>
+                            <td><code>flash verify_image firmware.bin 0x08000000</code></td>
+                            <td>验证Flash中的内容与镜像文件是否一致。</td>
+                        </tr>
+                        <tr>
+                            <td><code>flash protect</code></td>
+                            <td><code>flash protect 0 0 3 on</code></td>
+                            <td>启用或禁用指定扇区的写保护。</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>1.2 典型烧写流程示例</h3>
+                <pre>
+# 启动OpenOCD后，通过telnet连接（默认端口4444）
+$ telnet localhost 4444
+
+# 1. 探测Flash（假设是第一个Flash设备，编号0）
+> flash probe 0
+# 输出：Found Flash型号: STM32F4xx, base: 0x08000000, size: 0x00100000
+
+# 2. 全片擦除（可选，write_image的erase参数也会擦除）
+> flash erase_sector 0 0 last
+# 或者擦除特定地址范围
+> flash erase_address 0 0x08000000 0x10000
+
+# 3. 编程ELF文件（包含地址信息）
+> flash write_image erase firmware.elf
+# 参数说明：erase 表示在写入前自动擦除所需扇区
+
+# 4. 验证编程结果
+> flash verify_image firmware.elf
+
+# 5. 复位并运行程序
+> reset run
+                </pre>
+                <div class="note">
+                    <strong>提示：</strong> <code>flash write_image</code> 命令支持ELF、Intel HEX和原始BIN格式。对于BIN文件，必须指定加载地址，例如：<code>flash write_image firmware.bin 0x08000000</code>。
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>2. 编写与加载Flash算法</h2>
+                <p>当OpenOCD不支持目标芯片的Flash时，或者需要优化烧写过程时，我们需要编写自定义的Flash算法（也称为Flash驱动）。Flash算法是一段运行在目标芯片RAM中的小程序，负责执行擦除、编程等底层操作。</p>
+
+                <div class="svg-container">
+                    <svg width="700" height="300" viewBox="0 0 700 300">
+                        <rect x="50" y="30" width="600" height="240" rx="15" fill="none" stroke="#4A90E2" stroke-width="3" stroke-dasharray="5,5"/>
+                        <text x="350" y="60" text-anchor="middle" fill="#4A90E2" font-size="18" font-weight="bold">Flash算法加载与执行架构</text>
+                        <rect x="100" y="90" width="150" height="60" rx="8" fill="#7ED321"/>
+                        <text x="175" y="125" text-anchor="middle" fill="white" font-size="14">OpenOCD主机</text>
+                        <text x="175" y="145" text-anchor="middle" fill="white" font-size="12">发送算法文件</text>
+                        <rect x="300" y="90" width="150" height="60" rx="8" fill="#F5A623"/>
+                        <text x="375" y="125" text-anchor="middle" fill="white" font-size="14">目标芯片RAM</text>
+                        <text x="375" y="145" text-anchor="middle" fill="white" font-size="12">算法驻留区</text>
+                        <rect x="100" y="180" width="150" height="60" rx="8" fill="#F8E71C"/>
+                        <text x="175" y="215" text-anchor="middle" fill="#333" font-size="14">JTAG/SWD</text>
+                        <text x="175" y="235" text-anchor="middle" fill="#333" font-size="12">控制与数据通道</text>
+                        <rect x="300" y="180" width="150" height="60" rx="8" fill="#D0021B"/>
+                        <text x="375" y="215" text-anchor="middle" fill="white" font-size="14">目标芯片Flash</text>
+                        <text x="375" y="235" text-anchor="middle" fill="white" font-size="12">被操作对象</text>
+                        <path d="M250 120 L300 120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                        <path d="M250 210 L300 210" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                        <path d="M450 120 L400 180" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                        <path d="M450 210 L400 180" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                        <defs>
+                            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                                <path d="M0,0 L0,6 L9,3 z" fill="#666"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+
+                <h3>2.1 Flash算法的关键组成部分</h3>
+                <ul>
+                    <li><span class="highlight">初始化函数</span>：配置Flash控制寄存器、时钟等。</li>
+                    <li><span class="highlight">擦除函数</span>：实现扇区擦除、整片擦除操作。</li>
+                    <li><span class="highlight">编程函数</span>：将数据写入Flash，通常需要处理字/半字编程。</li>
+                    <li><span class="highlight">校验函数</span>（可选）：验证写入的数据。</li>
+                    <li><span class="highlight">信息结构体</span>：描述Flash的几何结构（扇区大小、地址等）以及函数指针表。</li>
+                </ul>
+
+                <h3>2.2 编写一个简单的Flash算法（示例框架）</h3>
+                <pre>
+/* my_flash_algorithm.c - 适用于Cortex-M的简单Flash算法框架 */
+#include &lt;stdint.h&gt;
+
+/* Flash寄存器定义（示例，需根据具体芯片手册修改） */
+#define FLASH_BASE       0x40023C00
+#define FLASH_KEYR       (*(volatile uint32_t *)(FLASH_BASE + 0x04))
+#define FLASH_SR         (*(volatile uint32_t *)(FLASH_BASE + 0x0C))
+#define FLASH_CR         (*(volatile uint32_t *)(FLASH_BASE + 0x10))
+#define FLASH_AR         (*(volatile uint32_t *)(FLASH_BASE + 0x14))
+
+/* 算法函数 */
+int flash_init(void) {
+    /* 解锁Flash控制寄存器 */
+    FLASH_KEYR = 0x45670123;
+    FLASH_KEYR = 0xCDEF89AB;
+    /* 等待Flash就绪 */
+    while (FLASH_SR & 0x00000001);
+    return 0; /* 0 = 成功 */
+}
+
+int flash_erase_sector(uint32_t sector_addr) {
+    /* 设置擦除模式及扇区地址 */
+    FLASH_CR |= 0x00000002; /* SER位 */
+    FLASH_AR = sector_addr;
+    FLASH_CR |= 0x00000040; /* START位 */
+    /* 等待操作完成 */
+    while (FLASH_SR & 0x00000001);
+    /* 检查错误标志 */
+    if (FLASH_SR & 0x0000001E) return -1;
+    return 0;
+}
+
+int flash_program_word(uint32_t addr, uint32_t data) {
+    /* 设置编程模式 */
+    FLASH_CR |= 0x00000001; /* PG位 */
+    /* 写入数据 */
+    *(volatile uint32_t *)addr = data;
+    /* 等待操作完成 */
+    while (FLASH_SR & 0x00000001);
+    /* 检查错误标志 */
+    if (FLASH_SR & 0x0000001E) return -1;
+    return 0;
+}
+
+/* Flash信息结构体 - OpenOCD通过此结构调用算法 */
+struct flash_driver my_flash = {
+    .name = "my_custom_flash",
+    .flash_init = flash_init,
+    .flash_erase = flash_erase_sector,
+    .flash_write = flash_program_word,
+    .sectors = {
+        {0x08000000, 0x04000}, /* 扇区0: 16KB */
+        {0x08004000, 0x04000}, /* 扇区1: 16KB */
+        /* ... 更多扇区定义 */
+        {0xFFFFFFFF, 0x00000}  /* 结束标记 */
+    }
+};
+                </pre>
+
+                <h3>2.3 在OpenOCD中加载自定义算法</h3>
+                <p>编写完算法代码后，需要将其编译为二进制文件，并在OpenOCD配置文件中加载。</p>
+                <pre>
+# 在OpenOCD的配置文件（如 target.cfg）中添加
+# 1. 声明Flash Bank，并指定算法文件
+flash bank $_FLASHNAME cfi 0x08000000 0x00100000 2 2 $_TARGETNAME \
+    <span class="highlight">my_flash_algorithm.bin</span> 0x20000000
+
+# 参数说明：
+# $_FLASHNAME: Flash Bank的名称，通常为'flash'
+# cfi: 使用通用Flash接口（此处仅为示例，实际可能是'stm32f1x'等）
+# 0x08000000: Flash基地址
+# 0x00100000: Flash大小（1MB）
+# 2 2: 总线宽度等参数（具体含义依赖驱动）
+# $_TARGETNAME: 关联的目标
+# my_flash_algorithm.bin: 自定义算法二进制文件路径
+# 0x20000000: 算法加载到目标RAM的地址
+                </pre>
+                <div class="warning">
+                    <strong>注意：</strong> 自定义Flash算法必须确保其代码和数据完全位于目标芯片的RAM中，并且不会与应用程序或OpenOCD自身使用的内存区域冲突。通常需要预留一块固定的RAM区域供算法使用。
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>3. 批量编程与生产脚本</h2>
+                <p>在产品量产或需要频繁烧写多个设备的场景下，自动化批量编程至关重要。OpenOCD支持通过脚本和命令行参数实现无人值守的批量烧写。</p>
+
+                <h3>3.1 编写批量烧写脚本</h3>
+                <p>创建一个OpenOCD脚本文件（例如 <code>batch_program.cfg</code>），将整个烧写流程自动化。</p>
+                <pre>
+# batch_program.cfg
+# 批量烧写脚本示例
+
+# 1. 接口与目标配置
+source [find interface/jlink.cfg]
+transport select swd
+source [find target/stm32f4x.cfg]
+
+# 2. 初始化
+init
+reset halt
+
+# 3. 配置Flash（如果未在target.cfg中配置）
+flash bank $_FLASHNAME stm32f2x 0x08000000 0x00100000 0 0 $_TARGETNAME
+
+# 4. 擦除整个Flash
+flash erase_sector 0 0 last
+puts "Flash擦除完成。"
+
+# 5. 编程固件文件
+flash write_image erase /path/to/firmware.bin 0x08000000
+puts "固件编程完成。"
+
+# 6. 验证
+flash verify_image /path/to/firmware.bin 0x08000000
+if {[get_flash_status] == 0} {
+    puts "验证成功！"
+} else {
+    puts "验证失败！"
+    shutdown error
+}
+
+# 7. 复位并运行（可选）
+reset run
+
+# 8. 关闭OpenOCD
+shutdown
+                </pre>
+
+                <h3>3.2 使用命令行进行批量操作</h3>
+                <p>通过命令行一次调用完成整个烧写过程，便于集成到CI/CD流水线或生产工具链中。</p>
+                <pre>
+# 基本语法
+openocd -f interface_config.cfg -f target_config.cfg -c "init; reset halt; flash write_image erase firmware.bin; reset run; shutdown"
+
+# 实际示例（使用J-Link和STM32F4）
+openocd \
+    -f interface/jlink.cfg \
+    -c "transport select swd" \
+    -f target/stm32f4x.cfg \
+    -c "init; reset halt; flash write_image erase firmware.elf; reset run; shutdown"
+
+# 将命令写入脚本文件并执行
+openocd -f batch_program.cfg
+                </pre>
+
+                <h3>3.3 批量编程最佳实践</h3>
+                <ol>
+                    <li><strong>错误处理</strong>：在脚本中加入状态检查，确保每一步成功后再继续。</li>
+                    <li><strong>日志记录</strong>：使用<code>log_output</code>命令将输出重定向到文件，便于追溯生产问题。</li>
+                    <li><strong>速度优化</strong>：调整JTAG/SWD时钟频率至允许的最高值，并使用<code>flash write_image</code>的<code>fast</code>选项（如果算法支持）。</li>
+                    <li><strong>多设备流水线</strong>：通过脚本控制多路复用器或使用多个适配器，实现多设备并行烧写。</li>
+                </ol>
+
+                <div class="note">
+                    <strong>生产提示：</strong> 对于严格的量产环境，建议在烧写后读取Flash的校验和或CRC，并与原始文件对比，作为最终的质量检查步骤。OpenOCD的<code>flash verify_image</code>命令可以进行逐字节验证，但速度较慢。生产中可以只验证关键区域或使用硬件CRC单元加速。
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>总结</h2>
+                <p>本讲详细介绍了使用OpenOCD进行Flash烧写的三大核心内容：丰富的<code>flash</code>命令集、自定义Flash算法的编写与加载方法，以及适用于量产的批量编程技术。掌握这些技能，将使你能够：</p>
+                <ul>
+                    <li>灵活地对各种嵌入式Flash存储器进行编程、擦除和保护操作。</li>
+                    <li>为OpenOCD尚未官方支持的Flash芯片添加支持，或优化现有算法。</li>
+                    <li>构建自动化、高可靠性的生产烧写流程，提高开发和生产效率。</li>
+                </ul>
+                <p>OpenOCD的Flash编程功能强大且可扩展，是嵌入式工程师工具箱中不可或缺的利器。结合JTAG/SWD调试功能，它实现了从代码烧写到调试的全流程覆盖。</p>
+                <div class="svg-container">
+                    <svg width="600" height="100" viewBox="0 0 600 100">
+                        <rect x="0" y="30" width="600" height="40" rx="20" fill="none" stroke="#4A90E2" stroke-width="3"/>
+                        <rect x="10" y="30" width="145" height="40" fill="#4A90E2"/>
+                        <text x="82.5" y="57" text-anchor="middle" fill="white" font-size="14" font-weight="bold">命令集掌握</text>
+                        <rect x="155" y="30" width="145" height="40" fill="#7ED321"/>
+                        <text x="227.5" y="57" text-anchor="middle" fill="white" font-size="14" font-weight="bold">算法定制</text>
+                        <rect x="300" y="30" width="145" height="40" fill="#F5A623"/>
+                        <text x="372.5" y="57" text-anchor="middle" fill="white" font-size="14" font-weight="bold">批量生产</text>
+                        <rect x="445" y="30" width="145" height="40" fill="#D0021B"/>
+                        <text x="517.5" y="57" text-anchor="middle" fill="white" font-size="14" font-weight="bold">全流程覆盖</text>
+                    </svg>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>© 《OpenOCD与JTAG调试详解》课程 - 第14讲</p>
+            <p>公众号: 蓝海资料掘金营，微信 deep3321</p>
+            <p>本教程仅供学习交流使用，转载请注明出处。</p>
+        </footer>
+    </div>
+</body>
+</html>

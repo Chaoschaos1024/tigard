@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>13、Flash编程基础 - OpenOCD与JTAG调试详解</title>
+    <style>
+        /* 中小学生色系：明快、柔和、活泼 */
+        :root {
+            --primary-blue: #4A90E2; /* 主色调蓝 */
+            --secondary-green: #7ED321; /* 辅助绿 */
+            --accent-yellow: #F8E71C; /* 强调黄 */
+            --light-bg: #F5F7FA; /* 浅背景 */
+            --card-bg: #FFFFFF; /* 卡片背景 */
+            --text-dark: #333333; /* 正文深色 */
+            --text-light: #666666; /* 正文浅色 */
+            --border-color: #D0D7DE; /* 边框色 */
+        }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            border: 3px double var(--primary-blue); /* 双边框 */
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(74, 144, 226, 0.1);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-green));
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            border-bottom: 5px solid var(--accent-yellow);
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.8em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+        main {
+            padding: 40px;
+        }
+        section {
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 2px dashed var(--border-color);
+        }
+        h2 {
+            color: var(--primary-blue);
+            border-left: 6px solid var(--secondary-green);
+            padding-left: 15px;
+            margin-top: 0;
+        }
+        h3 {
+            color: var(--secondary-green);
+        }
+        p {
+            color: var(--text-light);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--primary-blue);
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        ul, ol {
+            padding-left: 25px;
+            color: var(--text-light);
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .code-block {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            border-left: 5px solid var(--accent-yellow);
+            margin: 20px 0;
+        }
+        .svg-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f0f8ff;
+            border-radius: 10px;
+        }
+        .architecture-svg {
+            width: 100%;
+            max-width: 900px;
+            height: auto;
+        }
+        .highlight {
+            background-color: rgba(248, 231, 28, 0.2);
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        footer {
+            text-align: center;
+            padding: 25px;
+            background-color: var(--primary-blue);
+            color: white;
+            font-size: 1.1em;
+            border-top: 5px solid var(--accent-yellow);
+        }
+        footer p {
+            color: white;
+            margin: 0;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .note {
+            background-color: #e6f7ff;
+            border-left: 4px solid var(--primary-blue);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>第13讲：Flash编程基础</h1>
+            <div class="subtitle">Flash存储器特性、擦除、编程、验证的基本流程</div>
+        </header>
+
+        <main>
+            <section>
+                <h2>一、Flash存储器核心特性</h2>
+                <p>Flash存储器是一种非易失性存储器，在嵌入式系统中用于存储固件、配置数据和用户信息。理解其特性是正确编程的前提。</p>
+
+                <h3>1.1 主要类型与特点</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>类型</th>
+                            <th>结构</th>
+                            <th>擦除单位</th>
+                            <th>编程单位</th>
+                            <th>典型应用</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>NOR Flash</strong></td>
+                            <td>并行访问，地址数据线独立</td>
+                            <td>扇区 (Sector, 4KB~128KB)</td>
+                            <td>字/字节 (Word/Byte)</td>
+                            <td>代码存储、XIP执行</td>
+                        </tr>
+                        <tr>
+                            <td><strong>NAND Flash</strong></td>
+                            <td>串行访问，类似块设备</td>
+                            <td>块 (Block, 16KB~512KB)</td>
+                            <td>页 (Page, 512B~4KB)</td>
+                            <td>大容量数据存储</td>
+                        </tr>
+                        <tr>
+                            <td><strong>内部Flash (MCU)</strong></td>
+                            <td>集成在微控制器内部</td>
+                            <td>页/扇区 (Page/Sector)</td>
+                            <td>字/半字 (Word/Half-Word)</td>
+                            <td>微控制器固件</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="note">
+                    <strong>关键特性总结：</strong>
+                    <ul>
+                        <li><span class="highlight">擦除前必须编程</span>：Flash位只能从1变为0，擦除操作将整个区域恢复为1。</li>
+                        <li><span class="highlight">有限的寿命</span>：每个存储单元有擦写次数限制（通常1万~10万次）。</li>
+                        <li><span class="highlight">读写不对称</span>：擦除慢（毫秒级），编程较快（微秒级），读最快。</li>
+                        <li><span class="highlight">需要特定命令序列</span>：通过写入特定地址和命令字来控制内部状态机。</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section>
+                <h2>二、Flash编程基本流程</h2>
+                <p>通过JTAG和OpenOCD对Flash进行编程，需遵循严格的四步流程，确保数据完整写入。</p>
+
+                <div class="svg-container">
+                    <svg class="architecture-svg" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+                        <!-- 标题 -->
+                        <text x="400" y="40" text-anchor="middle" font-size="20" font-weight="bold" fill="var(--primary-blue)">Flash编程标准流程</text>
+
+                        <!-- 流程步骤 -->
+                        <g id="step1">
+                            <rect x="50" y="80" width="160" height="80" rx="10" ry="10" fill="var(--primary-blue)" stroke="var(--accent-yellow)" stroke-width="3"/>
+                            <text x="130" y="125" text-anchor="middle" fill="white" font-size="16" font-weight="bold">1. 连接与初始化</text>
+                            <text x="130" y="145" text-anchor="middle" fill="#E0E0E0" font-size="12">OpenOCD + JTAG</text>
+                        </g>
+                        <polyline points="210,120 250,120" stroke="var(--secondary-green)" stroke-width="3" fill="none"/>
+                        <polygon points="250,115 260,120 250,125" fill="var(--secondary-green)"/>
+
+                        <g id="step2">
+                            <rect x="260" y="80" width="160" height="80" rx="10" ry="10" fill="var(--secondary-green)" stroke="var(--accent-yellow)" stroke-width="3"/>
+                            <text x="340" y="125" text-anchor="middle" fill="white" font-size="16" font-weight="bold">2. 擦除目标区域</text>
+                            <text x="340" y="145" text-anchor="middle" fill="#E0E0E0" font-size="12">整片/扇区擦除</text>
+                        </g>
+                        <polyline points="420,120 460,120" stroke="var(--primary-blue)" stroke-width="3" fill="none"/>
+                        <polygon points="460,115 470,120 460,125" fill="var(--primary-blue)"/>
+
+                        <g id="step3">
+                            <rect x="470" y="80" width="160" height="80" rx="10" ry="10" fill="var(--primary-blue)" stroke="var(--accent-yellow)" stroke-width="3"/>
+                            <text x="550" y="125" text-anchor="middle" fill="white" font-size="16" font-weight="bold">3. 编程写入数据</text>
+                            <text x="550" y="145" text-anchor="middle" fill="#E0E0E0" font-size="12">烧录固件</text>
+                        </g>
+
+                        <!-- 下方验证步骤 -->
+                        <polyline points="550,160 550,200" stroke="var(--text-light)" stroke-width="2" stroke-dasharray="5,5" fill="none"/>
+                        <g id="step4">
+                            <rect x="470" y="200" width="160" height="80" rx="10" ry="10" fill="var(--accent-yellow)" stroke="var(--primary-blue)" stroke-width="3"/>
+                            <text x="550" y="240" text-anchor="middle" fill="#333" font-size="16" font-weight="bold">4. 验证与保护</text>
+                            <text x="550" y="260" text-anchor="middle" fill="#666" font-size="12">校验、写保护</text>
+                        </g>
+                        <polyline points="390,240 470,240" stroke="var(--secondary-green)" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+                        <text x="300" y="235" text-anchor="middle" fill="var(--text-dark)" font-size="14">可选循环</text>
+
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--secondary-green)"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+
+                <h3>2.1 详细步骤说明</h3>
+                <ol>
+                    <li><strong>连接与初始化</strong>
+                        <ul>
+                            <li>通过JTAG/SWD连接目标板。</li>
+                            <li>OpenOCD识别Flash控制器或外部Flash芯片。</li>
+                            <li>配置时钟、电压等参数。</li>
+                        </ul>
+                    </li>
+                    <li><strong>擦除目标区域</strong>
+                        <ul>
+                            <li><span class="highlight">整片擦除</span>：擦除整个Flash芯片，时间较长。</li>
+                            <li><span class="highlight">扇区擦除</span>：仅擦除需要编程的扇区，效率高，常用。</li>
+                            <li>擦除后，目标区域所有位变为1 (0xFF)。</li>
+                        </ul>
+                    </li>
+                    <li><strong>编程写入数据</strong>
+                        <ul>
+                            <li>将二进制固件按编程单位（字/页）写入。</li>
+                            <li>通常需要轮询状态位或等待完成中断。</li>
+                            <li>编程过程中，1变为0，0保持为0。</li>
+                        </ul>
+                    </li>
+                    <li><strong>验证与保护</strong>
+                        <ul>
+                            <li><span class="highlight">校验</span>：读取已写入数据，与源文件比较，确保一致。</li>
+                            <li><span class="highlight">写保护</span>：可选，设置保护位防止误擦写。</li>
+                            <li><span class="highlight">复位运行</span>：复位CPU，从Flash启动新固件。</li>
+                        </ul>
+                    </li>
+                </ol>
+            </section>
+
+            <section>
+                <h2>三、OpenOCD Flash编程实战</h2>
+                <p>以下是通过OpenOCD命令行和TCL脚本进行Flash编程的典型操作。</p>
+
+                <h3>3.1 常用OpenOCD Flash命令</h3>
+                <div class="code-block">
+<pre>
+# 1. 启动OpenOCD，加载配置文件
+openocd -f interface/cmsis-dap.cfg -f target/stm32f4x.cfg
+
+# 2. 连接Telnet到OpenOCD (默认端口4444)
+telnet localhost 4444
+
+# 3. 在Telnet会话中执行Flash操作
+# 探测Flash
+flash probe 0
+
+# 擦除整个Flash
+flash erase_sector 0 0 0
+
+# 或擦除特定扇区（例如从扇区5开始，共2个扇区）
+flash erase_sector 0 5 2
+
+# 编程bin文件到地址0x08000000
+flash write_image erase firmware.bin 0x08000000
+# 参数`erase`表示编程前自动擦除所需扇区
+
+# 验证编程内容
+flash verify_image firmware.bin 0x08000000
+
+# 4. 复位并运行
+reset run
+</pre>
+                </div>
+
+                <h3>3.2 TCL脚本示例</h3>
+                <div class="code-block">
+<pre>
+# flash_program.tcl
+proc program_flash {firmware_file base_address} {
+    # 初始化
+    init
+    reset halt
+
+    # 访问Flash Bank 0
+    flash probe 0
+
+    # 擦除（整片）
+    flash erase_sector 0 0 0
+    puts "Flash erased."
+
+    # 编程
+    flash write_image $firmware_file $base_address
+    puts "Firmware programmed."
+
+    # 验证
+    flash verify_image $firmware_file $base_address
+    puts "Verification passed."
+
+    # 复位运行
+    reset run
+    shutdown
+}
+
+# 调用函数，编程firmware.bin到STM32的Flash起始地址
+program_flash "firmware.bin" 0x08000000
+</pre>
+                </div>
+
+                <div class="note">
+                    <strong>调试提示：</strong> 如果编程失败，请检查：1) 目标板供电是否稳定；2) JTAG/SWD连接是否可靠；3) Flash配置命令序列是否正确（参考芯片手册）；4) 时钟频率是否过高，尝试降低JTAG速度。
+                </div>
+            </section>
+
+            <section>
+                <h2>四、关键概念与故障排查</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>概念/问题</th>
+                            <th>说明</th>
+                            <th>解决方案</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>写保护 (Write Protection)</strong></td>
+                            <td>Flash的某些区域被硬件或软件锁定，防止误写。</td>
+                            <td>在擦除前，通过OpenOCD命令 <code>flash protect</code> 解除保护。</td>
+                        </tr>
+                        <tr>
+                            <td><strong>读保护 (Read Protection)</strong></td>
+                            <td>保护固件不被读取，提升安全性。</td>
+                            <td>通过选项字节(Option Bytes)设置，一旦使能，整片擦除才能解除。</td>
+                        </tr>
+                        <tr>
+                            <td><strong>编程校验错误</strong></td>
+                            <td>验证时发现数据不一致。</td>
+                            <td>检查电源稳定性；降低编程速度；确保擦除成功；检查Flash算法文件。</td>
+                        </tr>
+                        <tr>
+                            <td><strong>OpenOCD无法识别Flash</strong></td>
+                            <td><code>flash probe</code> 失败。</td>
+                            <td>确认配置文件中的<code>flash bank</code>命令设置正确；检查目标芯片型号是否支持。</td>
+                        </tr>
+                        <tr>
+                            <td><strong>扇区边界对齐</strong></td>
+                            <td>编程数据未按扇区大小对齐可能导致错误。</td>
+                            <td>确保编程起始地址是扇区起始地址；填充数据至扇区整数倍。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+
+        <footer>
+            <p>公众号: 蓝海资料掘金营，微信 deep3321</p>
+            <p>© 《OpenOCD与JTAG调试详解》课程 - 本讲内容归开发者所有，仅供学习交流</p>
+        </footer>
+    </div>
+</body>
+</html>

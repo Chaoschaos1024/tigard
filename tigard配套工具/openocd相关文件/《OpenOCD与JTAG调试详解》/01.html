@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试技术导论 - OpenOCD与JTAG调试详解</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50; /* 青草绿 */
+            --secondary-color: #2196F3; /* 天空蓝 */
+            --accent-color: #FF9800; /* 活力橙 */
+            --light-color: #FFF9C4; /* 淡鹅黄 */
+            --background-color: #E8F5E9; /* 浅草绿背景 */
+            --text-color: #333333;
+            --border-color: #81C784; /* 柔和绿边框 */
+            --header-bg: #1B5E20; /* 深绿标题背景 */
+        }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            line-height: 1.8;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            border: double 8px var(--border-color);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 100, 0, 0.1);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: linear-gradient(135deg, var(--header-bg), var(--primary-color));
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 12px 12px 0 0;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        h2 {
+            color: var(--header-bg);
+            border-left: 6px solid var(--accent-color);
+            padding-left: 15px;
+            margin-top: 40px;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 10px 15px;
+            border-radius: 0 8px 8px 0;
+        }
+        h3 {
+            color: var(--secondary-color);
+        }
+        .content-box {
+            background-color: white;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 100, 0, 0.05);
+            transition: transform 0.3s;
+        }
+        .content-box:hover {
+            transform: translateY(-5px);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border: 2px solid var(--secondary-color);
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--light-color);
+            color: var(--header-bg);
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #F9F9F9;
+        }
+        ul, ol {
+            padding-left: 25px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        code, pre {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            padding: 2px 6px;
+        }
+        pre {
+            padding: 15px;
+            overflow-x: auto;
+            border-left: 4px solid var(--accent-color);
+            background-color: #f8f8f8;
+        }
+        .svg-container {
+            text-align: center;
+            margin: 30px 0;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px dashed var(--secondary-color);
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 25px;
+            background: linear-gradient(to right, var(--header-bg), var(--primary-color));
+            color: white;
+            border-radius: 0 0 12px 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-top: double 6px white;
+        }
+        .highlight {
+            background-color: var(--light-color);
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .note {
+            background-color: #E3F2FD;
+            border-left: 5px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>调试技术导论</h1>
+            <h3>嵌入式系统调试概述、JTAG标准简介、调试器与调试目标的关系</h3>
+            <p>《OpenOCD与JTAG调试详解》课程第一章</p>
+        </header>
+
+        <div class="content-box">
+            <h2>一、嵌入式系统调试概述</h2>
+            <p>嵌入式系统调试是指在嵌入式产品开发过程中，对硬件和软件进行问题定位、分析和修复的技术活动。与通用计算机调试不同，嵌入式调试通常需要面对资源受限、实时性要求高、与硬件紧密耦合等挑战。</p>
+            
+            <h3>1.1 调试的主要目标</h3>
+            <ul>
+                <li><span class="highlight">功能验证</span>：确保系统按设计要求正确执行。</li>
+                <li><span class="highlight">性能分析</span>：优化代码执行效率和资源使用。</li>
+                <li><span class="highlight">故障诊断</span>：定位硬件故障、软件缺陷和时序问题。</li>
+                <li><span class="highlight">实时监控</span>：观察系统运行时的状态和数据流。</li>
+            </ul>
+
+            <h3>1.2 常用调试技术对比</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>调试技术</th>
+                        <th>原理</th>
+                        <th>优点</th>
+                        <th>缺点</th>
+                        <th>适用场景</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>JTAG调试</strong></td>
+                        <td>通过专用测试访问端口访问芯片内部</td>
+                        <td>不占用系统资源，可调试底层硬件</td>
+                        <td>需要硬件支持，速度相对较慢</td>
+                        <td>裸机、Bootloader、驱动开发</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SWD调试</strong></td>
+                        <td>串行线调试，JTAG的简化版</td>
+                        <td>引脚少，成本低，速度较快</td>
+                        <td>功能相对JTAG有限</td>
+                        <td>ARM Cortex-M系列芯片</td>
+                    </tr>
+                    <tr>
+                        <td><strong>串口打印</strong></td>
+                        <td>通过UART输出调试信息</td>
+                        <td>简单易用，无需特殊硬件</td>
+                        <td>影响实时性，信息有限</td>
+                        <td>应用层调试，日志输出</td>
+                    </tr>
+                    <tr>
+                        <td><strong>仿真器</strong></td>
+                        <td>在PC上模拟目标硬件环境</td>
+                        <td>无需硬件，可控制执行</td>
+                        <td>与实际硬件有差异</td>
+                        <td>算法验证，早期开发</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="note">
+                <strong>注意：</strong>在实际项目中，通常需要结合多种调试技术。例如，使用JTAG进行底层硬件调试，同时使用串口输出应用程序日志。
+            </div>
+        </div>
+
+        <div class="content-box">
+            <h2>二、JTAG标准简介</h2>
+            <p>JTAG（Joint Test Action Group，联合测试行动组）是一种国际标准测试协议（IEEE 1149.1），最初用于印刷电路板的边界扫描测试，后来被广泛用于芯片调试和编程。</p>
+            
+            <h3>2.1 JTAG接口信号</h3>
+            <div class="svg-container">
+                <svg width="800" height="200" viewBox="0 0 800 200">
+                    <rect x="50" y="50" width="700" height="100" rx="10" fill="#E1F5FE" stroke="#0288D1" stroke-width="2"/>
+                    <text x="400" y="40" text-anchor="middle" font-size="18" font-weight="bold" fill="#01579B">JTAG接口信号示意图</text>
+                    
+                    <!-- 信号线 -->
+                    <line x1="100" y1="100" x2="200" y2="60" stroke="#4CAF50" stroke-width="3"/>
+                    <text x="90" y="95" text-anchor="end" font-size="14" fill="#1B5E20">TMS</text>
+                    <circle cx="200" cy="60" r="8" fill="#4CAF50"/>
+                    
+                    <line x1="100" y1="110" x2="250" y2="80" stroke="#2196F3" stroke-width="3"/>
+                    <text x="90" y="115" text-anchor="end" font-size="14" fill="#0D47A1">TCK</text>
+                    <circle cx="250" cy="80" r="8" fill="#2196F3"/>
+                    
+                    <line x1="100" y1="120" x2="300" y2="100" stroke="#FF9800" stroke-width="3"/>
+                    <text x="90" y="125" text-anchor="end" font-size="14" fill="#E65100">TDI</text>
+                    <circle cx="300" cy="100" r="8" fill="#FF9800"/>
+                    
+                    <line x1="100" y1="130" x2="350" y2="120" stroke="#9C27B0" stroke-width="3"/>
+                    <text x="90" y="135" text-anchor="end" font-size="14" fill="#4A148C">TDO</text>
+                    <circle cx="350" cy="120" r="8" fill="#9C27B0"/>
+                    
+                    <line x1="100" y1="140" x2="400" y2="140" stroke="#F44336" stroke-width="3"/>
+                    <text x="90" y="145" text-anchor="end" font-size="14" fill="#B71C1C">TRST</text>
+                    <circle cx="400" cy="140" r="8" fill="#F44336"/>
+                    
+                    <!-- 目标芯片 -->
+                    <rect x="500" y="30" width="200" height="140" rx="10" fill="#FFF3E0" stroke="#FF9800" stroke-width="3"/>
+                    <text x="600" y="70" text-anchor="middle" font-size="16" font-weight="bold" fill="#E65100">目标芯片</text>
+                    <text x="600" y="100" text-anchor="middle" font-size="14" fill="#EF6C00">(CPU/FPGA/MCU)</text>
+                    
+                    <!-- 连接线 -->
+                    <line x1="200" y1="60" x2="500" y2="60" stroke="#4CAF50" stroke-width="2" stroke-dasharray="5,5"/>
+                    <line x1="250" y1="80" x2="500" y2="80" stroke="#2196F3" stroke-width="2" stroke-dasharray="5,5"/>
+                    <line x1="300" y1="100" x2="500" y2="100" stroke="#FF9800" stroke-width="2" stroke-dasharray="5,5"/>
+                    <line x1="350" y1="120" x2="500" y2="120" stroke="#9C27B0" stroke-width="2" stroke-dasharray="5,5"/>
+                    <line x1="400" y1="140" x2="500" y2="140" stroke="#F44336" stroke-width="2" stroke-dasharray="5,5"/>
+                </svg>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>信号名称</th>
+                        <th>方向</th>
+                        <th>功能描述</th>
+                        <th>是否必需</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>TCK</strong> (Test Clock)</td>
+                        <td>调试器 → 目标</td>
+                        <td>测试时钟，同步所有JTAG操作</td>
+                        <td>是</td>
+                    </tr>
+                    <tr>
+                        <td><strong>TMS</strong> (Test Mode Select)</td>
+                        <td>调试器 → 目标</td>
+                        <td>测试模式选择，控制状态机转换</td>
+                        <td>是</td>
+                    </tr>
+                    <tr>
+                        <td><strong>TDI</strong> (Test Data Input)</td>
+                        <td>调试器 → 目标</td>
+                        <td>测试数据输入，向目标发送数据</td>
+                        <td>是</td>
+                    </tr>
+                    <tr>
+                        <td><strong>TDO</strong> (Test Data Output)</td>
+                        <td>目标 → 调试器</td>
+                        <td>测试数据输出，从目标读取数据</td>
+                        <td>是</td>
+                    </tr>
+                    <tr>
+                        <td><strong>TRST</strong> (Test Reset)</td>
+                        <td>调试器 → 目标</td>
+                        <td>测试复位，可选信号</td>
+                        <td>否</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>2.2 JTAG TAP状态机</h3>
+            <p>JTAG的核心是一个16状态的有限状态机（TAP - Test Access Port），通过TMS信号控制状态转换：</p>
+            <pre>
+// JTAG TAP状态机简化表示
+状态转换规则：
+1. 当TCK上升沿时，根据TMS值决定下一个状态
+2. TMS=0：通常向下或向右转换
+3. TMS=1：通常向上或向左转换
+
+关键状态：
+- Test-Logic-Reset：初始状态，JTAG逻辑被复位
+- Run-Test/Idle：空闲状态
+- Shift-DR：移位数据寄存器状态
+- Shift-IR：移位指令寄存器状态
+- Pause-DR/IR：暂停状态，允许长时间移位操作
+            </pre>
+        </div>
+
+        <div class="content-box">
+            <h2>三、调试器与调试目标的关系</h2>
+            <p>调试器（Debugger）与调试目标（Target）之间通过调试接口建立通信，形成完整的调试系统。</p>
+            
+            <h3>3.1 系统架构</h3>
+            <div class="svg-container">
+                <svg width="800" height="400" viewBox="0 0 800 400">
+                    <!-- 架构图 -->
+                    <rect x="50" y="50" width="200" height="300" rx="10" fill="#E8F5E9" stroke="#4CAF50" stroke-width="3"/>
+                    <text x="150" y="85" text-anchor="middle" font-size="18" font-weight="bold" fill="#1B5E20">开发主机</text>
+                    
+                    <rect x="70" y="110" width="160" height="60" rx="5" fill="#C8E6C9"/>
+                    <text x="150" y="130" text-anchor="middle" font-size="14" fill="#1B5E20">IDE</text>
+                    <text x="150" y="150" text-anchor="middle" font-size="12" fill="#388E3C">(VSCode, Eclipse等)</text>
+                    
+                    <rect x="70" y="180" width="160" height="60" rx="5" fill="#C8E6C9"/>
+                    <text x="150" y="200" text-anchor="middle" font-size="14" fill="#1B5E20">GDB</text>
+                    <text x="150" y="220" text-anchor="middle" font-size="12" fill="#388E3C">(调试前端)</text>
+                    
+                    <rect x="70" y="250" width="160" height="60" rx="5" fill="#C8E6C9"/>
+                    <text x="150" y="270" text-anchor="middle" font-size="14" fill="#1B5E20">OpenOCD</text>
+                    <text x="150" y="290" text-anchor="middle" font-size="12" fill="#388E3C">(调试服务器)</text>
+                    
+                    <!-- 调试适配器 -->
+                    <rect x="300" y="150" width="200" height="100" rx="10" fill="#E3F2FD" stroke="#2196F3" stroke-width="3"/>
+                    <text x="400" y="180" text-anchor="middle" font-size="18" font-weight="bold" fill="#0D47A1">调试适配器</text>
+                    <text x="400" y="210" text-anchor="middle" font-size="14" fill="#1565C0">(JTAG/SWD适配器)</text>
+                    
+                    <!-- 目标系统 -->
+                    <rect x="550" y="50" width="200" height="300" rx="10" fill="#FFF3E0" stroke="#FF9800" stroke-width="3"/>
+                    <text x="650" y="85" text-anchor="middle" font-size="18" font-weight="bold" fill="#E65100">目标系统</text>
+                    
+                    <rect x="570" y="120" width="160" height="60" rx="5" fill="#FFECB3"/>
+                    <text x="650" y="140" text-anchor="middle" font-size="14" fill="#E65100">CPU核心</text>
+                    <text x="650" y="160" text-anchor="middle" font-size="12" fill="#F57C00">(ARM, RISC-V等)</text>
+                    
+                    <rect x="570" y="200" width="160" height="60" rx="5" fill="#FFECB3"/>
+                    <text x="650" y="220" text-anchor="middle" font-size="14" fill="#E65100">调试模块</text>
+                    <text x="650" y="240" text-anchor="middle" font-size="12" fill="#F57C00">(DAP, ITM等)</text>
+                    
+                    <rect x="570" y="280" width="160" height="60" rx="5" fill="#FFECB3"/>
+                    <text x="650" y="300" text-anchor="middle" font-size="14" fill="#E65100">内存与外设</text>
+                    
+                    <!-- 连接线 -->
+                    <line x1="250" y1="200" x2="300" y2="200" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+                    <text x="275" y="190" text-anchor="middle" font-size="12" fill="#666">USB/Ethernet</text>
+                    
+                    <line x1="500" y1="200" x2="550" y2="200" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+                    <text x="525" y="190" text-anchor="middle" font-size="12" fill="#666">JTAG/SWD</text>
+                    
+                    <!-- 内部连接 -->
+                    <line x1="150" y1="170" x2="150" y2="180" stroke="#666" stroke-width="1"/>
+                    <line x1="150" y1="240" x2="150" y2="250" stroke="#666" stroke-width="1"/>
+                    
+                    <!-- 箭头标记 -->
+                    <defs>
+                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+
+            <h3>3.2 各组件功能</h3>
+            <ol>
+                <li><strong>开发主机</strong>：运行IDE和调试工具，提供用户界面
+                    <ul>
+                        <li>集成开发环境（IDE）：代码编辑、编译、项目管理</li>
+                        <li>GDB：GNU调试器，执行高级调试命令</li>
+                        <li>OpenOCD：开源调试服务器，协议转换</li>
+                    </ul>
+                </li>
+                <li><strong>调试适配器</strong>：硬件接口转换器
+                    <ul>
+                        <li>将USB/Ethernet转换为JTAG/SWD信号</li>
+                        <li>常见型号：ST-Link、J-Link、CMSIS-DAP等</li>
+                        <li>提供电平转换和信号缓冲</li>
+                    </ul>
+                </li>
+                <li><strong>目标系统</strong>：被调试的嵌入式设备
+                    <ul>
+                        <li>CPU核心：包含调试寄存器组</li>
+                        <li>调试访问端口（DAP）：处理调试请求</li>
+                        <li>内存映射：允许调试器访问内存和外设</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h3>3.3 典型调试会话流程</h3>
+            <pre>
+1. 初始化连接
+   $ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg
+   
+2. 启动GDB并连接
+   (gdb) target remote localhost:3333
+   
+3. 加载程序到目标
+   (gdb) load firmware.elf
+   
+4. 设置断点并运行
+   (gdb) break main
+   (gdb) continue
+   
+5. 单步执行和查看状态
+   (gdb) step
+   (gdb) info registers
+   (gdb) print variable_name
+   
+6. 监控内存和外设
+   (gdb) x/10x 0x20000000
+   (gdb) set {int}0x40021018 = 0x00000001
+            </pre>
+        </div>
+
+        <div class="content-box">
+            <h2>四、本章总结</h2>
+            <p>本章介绍了嵌入式系统调试的基本概念、JTAG标准的工作原理以及调试器与调试目标之间的协作关系。关键要点如下：</p>
+            
+            <ul>
+                <li>嵌入式调试需要综合运用多种技术，JTAG是其中最重要的硬件调试标准之一</li>
+                <li>JTAG通过TAP状态机和5个基本信号实现芯片级访问和控制</li>
+                <li>完整的调试系统包括开发主机、调试适配器和目标系统三部分</li>
+                <li>OpenOCD作为调试服务器，在GDB和目标硬件之间起桥梁作用</li>
+                <li>理解调试架构有助于快速定位问题，提高开发效率</li>
+            </ul>
+            
+            <div class="note">
+                <strong>实践建议：</strong>初学者应从简单的JTAG调试适配器（如ST-Link）和开源工具（OpenOCD+GDB）开始，逐步掌握调试技巧。在实际项目中，合理配置调试工具可以节省大量开发时间。
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        公众号: 蓝海资料掘金营，微信 deep3321<br>
+        《OpenOCD与JTAG调试详解》课程 · 第一章 · 调试技术导论
+    </footer>
+</body>
+</html>

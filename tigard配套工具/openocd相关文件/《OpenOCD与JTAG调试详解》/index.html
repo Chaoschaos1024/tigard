@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>《OpenOCD与JTAG调试详解》课程目录</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            color: #333;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(90deg, #4CAF50, #2196F3);
+            color: white;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 20px rgba(33, 150, 243, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: 0;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .subtitle {
+            display: inline-block;
+            background-color: #FF9800;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-weight: bold;
+            margin-top: 15px;
+            font-size: 1rem;
+            box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 22px;
+            margin-top: 20px;
+        }
+
+        .chapter-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border-left: 6px solid #FF5722;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chapter-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+            border-left-color: #2196F3;
+        }
+
+        .chapter-card::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 60px;
+            background: #E3F2FD;
+            border-radius: 0 0 0 60px;
+            transition: all 0.3s ease;
+        }
+
+        .chapter-card:hover::after {
+            background: #BBDEFB;
+            width: 70px;
+            height: 70px;
+        }
+
+        .chapter-number {
+            display: inline-block;
+            background: linear-gradient(135deg, #FF5722, #FF9800);
+            color: white;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 42px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(255, 87, 34, 0.3);
+        }
+
+        .chapter-card h3 {
+            font-size: 1.4rem;
+            color: #1565C0;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            flex-grow: 0;
+        }
+
+        .chapter-content {
+            color: #555;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            flex-grow: 1;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #E0E0E0;
+        }
+
+        .chapter-file {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-link {
+            color: #2196F3;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background-color: #E3F2FD;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .file-link:hover {
+            background-color: #2196F3;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .file-link i {
+            font-size: 0.9rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 25px;
+            background: linear-gradient(90deg, #1565C0, #0D47A1);
+            color: white;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            box-shadow: 0 -4px 20px rgba(21, 101, 192, 0.2);
+            position: relative;
+        }
+
+        footer::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4CAF50, #FFC107, #FF5722);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .footer-content i {
+            color: #FFC107;
+            margin-right: 8px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px 24px;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+        }
+
+        @media (max-width: 768px) {
+            .course-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-microchip"></i> OpenOCD与JTAG调试详解</h1>
+            <p>从零开始掌握嵌入式系统底层调试技术，深入理解JTAG协议与OpenOCD工具链的完整课程</p>
+            <div class="subtitle">
+                <i class="fas fa-graduation-cap"></i> 专业课程 · 30章精华内容 · 实战驱动
+            </div>
+        </header>
+
+        <div class="stats">
+            <div class="stat-item"><i class="fas fa-book-open"></i> 30个核心章节</div>
+            <div class="stat-item"><i class="fas fa-code"></i> 200+调试命令详解</div>
+            <div class="stat-item"><i class="fas fa-laptop-code"></i> 实战案例驱动</div>
+        </div>
+
+        <div class="course-grid">
+            <!-- 第1章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">01</div>
+                <h3>调试技术导论</h3>
+                <div class="chapter-content">
+                    嵌入式系统调试概述、JTAG标准简介、调试器与调试目标的关系。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="01.html" class="file-link"><i class="fas fa-external-link-alt"></i> 01.html</a>
+                </div>
+            </div>
+
+            <!-- 第2章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">02</div>
+                <h3>JTAG协议深度解析</h3>
+                <div class="chapter-content">
+                    JTAG接口定义（TDI, TDO, TCK, TMS, TRST）、TAP状态机详解、边界扫描原理。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="02.html" class="file-link"><i class="fas fa-external-link-alt"></i> 02.html</a>
+                </div>
+            </div>
+
+            <!-- 第3章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">03</div>
+                <h3>OpenOCD概览</h3>
+                <div class="chapter-content">
+                    OpenOCD项目历史、功能定位、在嵌入式开发工具链中的位置。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="03.html" class="file-link"><i class="fas fa-external-link-alt"></i> 03.html</a>
+                </div>
+            </div>
+
+            <!-- 第4章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">04</div>
+                <h3>OpenOCD安装与配置</h3>
+                <div class="chapter-content">
+                    Linux/Windows/macOS平台安装方法、依赖库安装、验证安装成功。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="04.html" class="file-link"><i class="fas fa-external-link-alt"></i> 04.html</a>
+                </div>
+            </div>
+
+            <!-- 第5章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">05</div>
+                <h3>OpenOCD基础架构</h3>
+                <div class="chapter-content">
+                    OpenOCD三大组件（接口驱动、目标芯片配置、命令交互）解析。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="05.html" class="file-link"><i class="fas fa-external-link-alt"></i> 05.html</a>
+                </div>
+            </div>
+
+            <!-- 第6章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">06</div>
+                <h3>配置文件详解</h3>
+                <div class="chapter-content">
+                    接口配置文件（.cfg）、目标芯片配置文件（.cfg）的语法与结构。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="06.html" class="file-link"><i class="fas fa-external-link-alt"></i> 06.html</a>
+                </div>
+            </div>
+
+            <!-- 第7章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">07</div>
+                <h3>常用调试硬件接口</h3>
+                <div class="chapter-content">
+                    FT2232/FT232H、J-Link、CMSIS-DAP、ST-Link等适配器介绍与配置。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="07.html" class="file-link"><i class="fas fa-external-link-alt"></i> 07.html</a>
+                </div>
+            </div>
+
+            <!-- 第8章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">08</div>
+                <h3>连接目标板</h3>
+                <div class="chapter-content">
+                    启动OpenOCD服务器、解读连接日志、常见连接问题排查。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="08.html" class="file-link"><i class="fas fa-external-link-alt"></i> 08.html</a>
+                </div>
+            </div>
+
+            <!-- 第9章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">09</div>
+                <h3>OpenOCD命令交互模式</h3>
+                <div class="chapter-content">
+                    Telnet与GDB两种连接方式、命令提示符与基本操作。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="09.html" class="file-link"><i class="fas fa-external-link-alt"></i> 09.html</a>
+                </div>
+            </div>
+
+            <!-- 第10章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">10</div>
+                <h3>基础调试命令</h3>
+                <div class="chapter-content">
+                    halt, resume, step, reset, reg, mww, mwh, mwb等命令详解。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="10.html" class="file-link"><i class="fas fa-external-link-alt"></i> 10.html</a>
+                </div>
+            </div>
+
+            <!-- 第11章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">11</div>
+                <h3>内存访问与操作</h3>
+                <div class="chapter-content">
+                    内存映射理解、读写内存（字、半字、字节）、内存填充与转储。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="11.html" class="file-link"><i class="fas fa-external-link-alt"></i> 11.html</a>
+                </div>
+            </div>
+
+            <!-- 第12章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">12</div>
+                <h3>寄存器操作</h3>
+                <div class="chapter-content">
+                    CPU核心寄存器访问、外设寄存器读写、寄存器位域操作。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="12.html" class="file-link"><i class="fas fa-external-link-alt"></i> 12.html</a>
+                </div>
+            </div>
+
+            <!-- 第13章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">13</div>
+                <h3>Flash编程基础</h3>
+                <div class="chapter-content">
+                    Flash存储器特性、擦除、编程、验证的基本流程。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="13.html" class="file-link"><i class="fas fa-external-link-alt"></i> 13.html</a>
+                </div>
+            </div>
+
+            <!-- 第14章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">14</div>
+                <h3>使用OpenOCD烧写Flash</h3>
+                <div class="chapter-content">
+                    flash命令集、编写与加载Flash算法、批量编程。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="14.html" class="file-link"><i class="fas fa-external-link-alt"></i> 14.html</a>
+                </div>
+            </div>
+
+            <!-- 第15章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">15</div>
+                <h3>与GDB协同调试</h3>
+                <div class="chapter-content">
+                    启动GDB并连接OpenOCD、设置断点、单步执行、查看变量与内存。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="15.html" class="file-link"><i class="fas fa-external-link-alt"></i> 15.html</a>
+                </div>
+            </div>
+
+            <!-- 第16章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">16</div>
+                <h3>高级断点与观察点</h3>
+                <div class="chapter-content">
+                    硬件断点与软件断点、数据观察点（watchpoint）的设置与使用。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="16.html" class="file-link"><i class="fas fa-external-link-alt"></i> 16.html</a>
+                </div>
+            </div>
+
+            <!-- 第17章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">17</div>
+                <h3>脚本编程入门</h3>
+                <div class="chapter-content">
+                    TCL语言基础、在OpenOCD配置文件中使用TCL。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="17.html" class="file-link"><i class="fas fa-external-link-alt"></i> 17.html</a>
+                </div>
+            </div>
+
+            <!-- 第18章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">18</div>
+                <h3>自定义OpenOCD命令与过程</h3>
+                <div class="chapter-content">
+                    编写用户自定义命令、封装常用操作为过程。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="18.html" class="file-link"><i class="fas fa-external-link-alt"></i> 18.html</a>
+                </div>
+            </div>
+
+            <!-- 第19章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">19</div>
+                <h3>多核调试技术</h3>
+                <div class="chapter-content">
+                    对称多核（SMP）与非对称多核（AMP）的调试配置与方法。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="19.html" class="file-link"><i class="fas fa-external-link-alt"></i> 19.html</a>
+                </div>
+            </div>
+
+            <!-- 第20章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">20</div>
+                <h3>RTOS感知调试</h3>
+                <div class="chapter-content">
+                    OpenOCD对FreeRTOS/ThreadX等RTOS的调试支持与配置。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="20.html" class="file-link"><i class="fas fa-external-link-alt"></i> 20.html</a>
+                </div>
+            </div>
+
+            <!-- 第21章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">21</div>
+                <h3>调试事件与异步通知</h3>
+                <div class="chapter-content">
+                    理解调试事件、配置事件处理脚本、实现自动化响应。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="21.html" class="file-link"><i class="fas fa-external-link-alt"></i> 21.html</a>
+                </div>
+            </div>
+
+            <!-- 第22章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">22</div>
+                <h3>性能分析与追踪</h3>
+                <div class="chapter-content">
+                    ITM（Instrumentation Trace Macrocell）简介、配置与数据捕获。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="22.html" class="file-link"><i class="fas fa-external-link-alt"></i> 22.html</a>
+                </div>
+            </div>
+
+            <!-- 第23章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">23</div>
+                <h3>ETM/PTI指令追踪</h3>
+                <div class="chapter-content">
+                    嵌入式追踪宏单元（ETM）原理、配置与使用场景。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="23.html" class="file-link"><i class="fas fa-external-link-alt"></i> 23.html</a>
+                </div>
+            </div>
+
+            <!-- 第24章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">24</div>
+                <h3>电源与时钟调试</h3>
+                <div class="chapter-content">
+                    通过JTAG监控与配置芯片电源状态、时钟树调试方法。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="24.html" class="file-link"><i class="fas fa-external-link-alt"></i> 24.html</a>
+                </div>
+            </div>
+
+            <!-- 第25章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">25</div>
+                <h3>安全特性与调试</h3>
+                <div class="chapter-content">
+                    芯片安全状态（Secure/Non-secure）对调试的影响、调试访问端口（DAP）安全。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="25.html" class="file-link"><i class="fas fa-external-link-alt"></i> 25.html</a>
+                </div>
+            </div>
+
+            <!-- 第26章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">26</div>
+                <h3>低功耗模式调试</h3>
+                <div class="chapter-content">
+                    芯片进入低功耗模式时的调试挑战与解决方案。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="26.html" class="file-link"><i class="fas fa-external-link-alt"></i> 26.html</a>
+                </div>
+            </div>
+
+            <!-- 第27章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">27</div>
+                <h3>复杂问题诊断案例</h3>
+                <div class="chapter-content">
+                    分析程序跑飞、HardFault异常、内存损坏等问题的调试流程。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="27.html" class="file-link"><i class="fas fa-external-link-alt"></i> 27.html</a>
+                </div>
+            </div>
+
+            <!-- 第28章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">28</div>
+                <h3>自动化测试与生产编程</h3>
+                <div class="chapter-content">
+                    利用OpenOCD脚本实现自动化测试、量产固件烧录方案设计。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="28.html" class="file-link"><i class="fas fa-external-link-alt"></i> 28.html</a>
+                </div>
+            </div>
+
+            <!-- 第29章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">29</div>
+                <h3>OpenOCD扩展与二次开发</h3>
+                <div class="chapter-content">
+                    添加新适配器驱动、支持新芯片的流程与方法。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="29.html" class="file-link"><i class="fas fa-external-link-alt"></i> 29.html</a>
+                </div>
+            </div>
+
+            <!-- 第30章 -->
+            <div class="chapter-card">
+                <div class="chapter-number">30</div>
+                <h3>课程总结与最佳实践</h3>
+                <div class="chapter-content">
+                    调试工作流总结、性能优化技巧、常见陷阱与避坑指南。
+                </div>
+                <div class="chapter-file">
+                    <span>课程文件：</span>
+                    <a href="30.html" class="file-link"><i class="fas fa-external-link-alt"></i> 30.html</a>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-content">
+                <div><i class="fas fa-book"></i> 课程资料持续更新中，请关注下方公众号获取最新内容</div>
+                <div style="font-size: 1.3rem; font-weight: bold; margin-top: 10px;">
+                    <i class="fas fa-qrcode"></i> 公众号: 蓝海资料掘金营
+                </div>
+                <div style="margin-top: 5px;">
+                    <i class="fas fa-weixin"></i> 微信: deep3321
+                </div>
+                <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.9;">
+                    © 2026 嵌入式调试技术课程 | 理论与实践结合，掌握核心调试技能
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

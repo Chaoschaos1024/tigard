@@ -200,6 +200,86 @@ FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功
 ![TJP设置输出](image/image16.png)
 ---
 
+## 七、openocd的使用
+
+### openocd简介
+
+openocd
+
+
+### openocd的安装
+
+请下载最新的MSYS2，或者是使用本项目中**\tigard配套工具\openocd相关文件**下的“msys2-用于安装openocd.exe”，安装该软件。
+安装完成会显示一个命令行界面，输入指令：
+
+```bash
+pacman -S mingw-w64-x86_64-openocd
+```
+会有如下输出
+![MSYS2输出](image/image47.png)
+安装完成后输入以下指令查看openocd的位置
+```bash
+find /ucrt64 -name "openocd.exe" 2>/dev/null
+find /mingw64 -name "openocd.exe" 2>/dev/null
+```
+输出如下
+```bash
+/mingw64/bin/openocd.exe
+```
+打开MSYS的安装文件夹，进而寻找上面这个目录，将整个目录复制下来，比如我复制下来就是
+**D:\program\msys2\mingw64\bin**
+将该目录添加至环境变量
+1. 右键点击 **"此电脑"** → **"属性"** → **"高级系统设置"** → **"环境变量"**
+2. 在 **"系统变量"** 或 **"用户变量"** 中找到 `Path`，选中后点击 **"编辑"**
+3. 点击 **"新建"**，添加 OpenOCD 所在目录，**D:\program\msys2\mingw64\bin**，此处应替换为你的目录位置
+4. 依次点击 **"确定"** 保存
+
+在**msys2\mingw64**文件夹下，有两个文件夹需要注意：
+
+**\msys2\mingw64\share\openocd\scripts\interface**
+
+	该文件夹用于存储烧录器的相关配置文件，请将本项目下的**tigard配套工具\openocd相关文件**中的三个配置文件放置于以上的文件夹中，会覆盖掉原来的一个tigard.cfg，我提供的版本是去掉了对设备ID的匹配，也可以兼容其他ID的Tigard
+	
+**\msys2\mingw64\share\openocd\scripts\target**
+
+	被调试的芯片的cfg文件都在这，新添加的芯片的配置文件请添加至此处，其中也包含了大量的ic，可以做参考
+	
+### 打个驱动
+
+openocd为了更好的性能选择更为底层的驱动程序，也就是libusb或者Winusb，而非默认的FTDI提供的VCP程序
+在配套工具文件夹下，我提供了Zadig，一个给这类设备更换驱动的小软件，按照下面步骤来吧
+1. 以管理员身份运行 zadig.exe
+2. 在菜单栏点击 Options -> List All Devices
+3. 在下拉列表中，找到你的 Tigard 设备。它可能会显示为 Tigard (Interface 1)、USB Serial Converter A 或类似的名字，通常有不止一个选项，需要逐个检查
+    > 小技巧：你可以**插拔**一下设备，看列表中哪个设备会随之出现或消失，那就是它了
+4. 选中尾缀为**interface1**的设备后，看右边的绿色箭头。把目标驱动设置为 WinUSB (或者 libusb / libusbK)
+5. 点击 "Replace Driver" 按钮，等待操作完成
+
+![Zadig](image/image48.png)
+	
+### 硬件连接
+
+在这里使用tigard搭配树莓派pico来进行测试，pico是SWD接口，我们要做少量调整
+1. 将Tigard的Mode开关调整至SWD模式
+2. 将Tigard的电压开关调整至3.3V
+3. 接线请参考板子背面的表格，连接SWCLK以及SWDIO，而且不要忘记共地
+
+![背部](image/image49.png)
+
+4. 使用数据线单独链接tigard和树莓派pico
+
+### 使用openocd
+
+使用如下指令：
+```bash
+openocd -f interface/tigard-swd.cfg -f target/rp2040.cfg
+```
+成功识别如下图
+
+![openocd](image/image50.png)
+openocd类似一个底层驱动将会一直运行，如何连接和调用请参考**tigard配套工具\openocd相关文件\《OpenOCD与JTAG调试详解》**下的相关文件
+
+---
 
 ## 七、Linux 下的 urjtag
 
@@ -234,7 +314,8 @@ detect                                            # 检测设备
 
 示例使用 ATmega32u4（Arduino Leonardo），该芯片不在 urjtag 器件库中，但 ID 可检测到。
 
-后续指令（如 `initbus ejtag`、`detectflash`、`readmem`、`writemem`）因 urjtag 缺乏维护，在现代 Linux 系统上存在兼容性问题。在 Ubuntu、Kali、Raspbian、Debian 上测试均遇到相同报错。
+后续指令（如 `initbus ejtag`、`detectflash`、`readmem`、`writemem`）因 urjtag 缺乏维护，目前默认的安装包是2007年的版本，在现代 Linux 系统上存在兼容性问题。在 Ubuntu、Kali、Raspbian、Debian 上测试均遇到相同报错。
+在自行编译最新版本的urjtag（2021.03版本）之后，这些问题仍然存在，所以建议使用其他软件，比如openocd
 
 > 换用老内核 Linux 可能解决，但建议使用其他工具。
 

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenOCD配置文件详解 - 嵌入式调试课程</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50; /* 青草绿 */
+            --secondary-color: #2196F3; /* 天空蓝 */
+            --accent-color: #FF9800; /* 活力橙 */
+            --light-color: #FFF9C4; /* 淡鹅黄 */
+            --background-color: #E8F5E9; /* 浅豆绿背景 */
+            --text-color: #333333;
+            --border-color: #81C784; /* 浅绿边框 */
+            --card-bg: #FFFFFF;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            border: 8px double var(--border-color);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 100, 0, 0.1);
+        }
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px 15px 0 0;
+            margin-bottom: 30px;
+            border-bottom: 5px solid var(--accent-color);
+        }
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        h2 {
+            color: var(--secondary-color);
+            border-left: 6px solid var(--accent-color);
+            padding-left: 15px;
+            margin: 30px 0 15px;
+            font-size: 1.8rem;
+        }
+        h3 {
+            color: var(--primary-color);
+            margin: 20px 0 10px;
+            font-size: 1.4rem;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 2px solid var(--border-color);
+            flex: 1 1 45%;
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .full-width {
+            flex: 1 1 100%;
+        }
+        pre {
+            background-color: #f5f5f5;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            overflow-x: auto;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        code {
+            background-color: #e8f4fd;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #d63384;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px 15px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        ul, ol {
+            padding-left: 25px;
+            margin: 15px 0;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .svg-container {
+            text-align: center;
+            margin: 25px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 10px;
+            border: 2px dashed var(--border-color);
+        }
+        .architecture-svg {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+        }
+        .note {
+            background-color: var(--light-color);
+            border-left: 5px solid var(--accent-color);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        footer {
+            text-align: center;
+            padding: 25px;
+            margin-top: 40px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 0 0 15px 15px;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            border-top: 5px solid var(--accent-color);
+        }
+        .keyword {
+            color: #d63384;
+            font-weight: bold;
+        }
+        .comment {
+            color: #6c757d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>OpenOCD与JTAG调试详解</h1>
+        <p class="subtitle">第六讲：配置文件详解 — 接口与目标芯片配置文件的语法与结构</p>
+        <p>嵌入式系统专家 · 硬件调试专家 · OpenOCD专家</p>
+    </header>
+
+    <main>
+        <section class="container">
+            <div class="card full-width">
+                <h2>1. OpenOCD配置文件概述</h2>
+                <p>OpenOCD（Open On-Chip Debugger）是一个开源的片上调试器，通过JTAG、SWD等接口与目标芯片通信。其行为完全由<strong>配置文件（.cfg文件）</strong>驱动。配置文件主要分为两大类：</p>
+                <ul>
+                    <li><strong>接口配置文件</strong>：定义调试适配器（如J-Link、ST-Link、FTDI等）的硬件接口参数。</li>
+                    <li><strong>目标芯片配置文件</strong>：定义目标处理器的架构、内存映射、Flash编程算法等。</li>
+                </ul>
+                <div class="svg-container">
+                    <svg class="architecture-svg" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="50" y="100" width="120" height="60" rx="10" fill="#4CAF50" stroke="#2E7D32" stroke-width="2"/>
+                        <text x="110" y="135" text-anchor="middle" fill="white" font-weight="bold">PC主机</text>
+                        <rect x="250" y="100" width="120" height="60" rx="10" fill="#2196F3" stroke="#1565C0" stroke-width="2"/>
+                        <text x="310" y="135" text-anchor="middle" fill="white" font-weight="bold">调试适配器</text>
+                        <rect x="450" y="100" width="120" height="60" rx="10" fill="#FF9800" stroke="#EF6C00" stroke-width="2"/>
+                        <text x="510" y="135" text-anchor="middle" fill="white" font-weight="bold">目标芯片</text>
+                        <path d="M170 130 L250 130" stroke="#333" stroke-width="3" stroke-dasharray="5,5"/>
+                        <path d="M370 130 L450 130" stroke="#333" stroke-width="3"/>
+                        <polygon points="450,130 440,125 440,135" fill="#333"/>
+                        <text x="210" y="120" text-anchor="middle" fill="#666" font-size="14">USB/网络</text>
+                        <text x="410" y="120" text-anchor="middle" fill="#666" font-size="14">JTAG/SWD</text>
+                        <rect x="200" y="200" width="400" height="80" rx="10" fill="#E8F5E9" stroke="#81C784" stroke-width="2"/>
+                        <text x="400" y="230" text-anchor="middle" fill="#2E7D32" font-weight="bold" font-size="18">OpenOCD配置文件体系</text>
+                        <text x="400" y="260" text-anchor="middle" fill="#2196F3" font-size="14">接口配置 + 目标配置 = 完整调试环境</text>
+                    </svg>
+                </div>
+                <div class="note">
+                    <strong>提示：</strong> 通常通过<code>openocd -f interface.cfg -f target.cfg</code>命令同时加载接口与目标配置文件来启动调试会话。
+                </div>
+            </div>
+        </section>
+
+        <section class="container">
+            <div class="card">
+                <h2>2. 接口配置文件详解</h2>
+                <p>接口配置文件用于配置调试探头（Adapter）的硬件接口参数，包括传输协议、时钟速度、引脚连接等。</p>
+                <h3>2.1 基本结构</h3>
+                <pre>
+# 选择调试适配器驱动
+<span class="keyword">adapter driver</span> jlink
+
+# 设置传输协议
+<span class="keyword">transport select</span> swd
+
+# 设置JTAG时钟速度（单位：kHz）
+<span class="keyword">adapter speed</span> 1000
+
+# 可选：指定序列号（多设备时）
+<span class="keyword">adapter serial</span> "12345678"
+
+# 可选：配置特定引脚（如复位线）
+<span class="keyword">reset_config</span> srst_only
+<span class="keyword">adapter gpio</span> reset 0
+                </pre>
+
+                <h3>2.2 常用配置指令</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>指令</th>
+                            <th>描述</th>
+                            <th>示例</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>adapter driver</code></td>
+                            <td>指定调试适配器类型</td>
+                            <td>jlink, stlink, ftdi, cmsis-dap</td>
+                        </tr>
+                        <tr>
+                            <td><code>transport select</code></td>
+                            <td>选择物理传输协议</td>
+                            <td>jtag, swd</td>
+                        </tr>
+                        <tr>
+                            <td><code>adapter speed</code></td>
+                            <td>设置通信时钟频率</td>
+                            <td>1000, 4000, 10000</td>
+                        </tr>
+                        <tr>
+                            <td><code>reset_config</code></td>
+                            <td>配置复位信号行为</td>
+                            <td>srst_only, trst_only, combined</td>
+                        </tr>
+                        <tr>
+                            <td><code>adapter gpio</code></td>
+                            <td>控制GPIO引脚（如复位、LED）</td>
+                            <td>adapter gpio reset 0</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>2.3 示例：J-Link接口配置</h3>
+                <pre>
+# interface/jlink.cfg 示例
+<span class="keyword"># 使用J-Link V9调试探头</span>
+<span class="keyword">adapter driver</span> jlink
+
+<span class="keyword"># 使用SWD协议，速度4MHz</span>
+<span class="keyword">transport select</span> swd
+<span class="keyword">adapter speed</span> 4000
+
+<span class="keyword"># 配置复位线为SRST，低电平有效</span>
+<span class="keyword">reset_config</span> srst_only srst_pulls_low
+
+<span class="keyword"># 如果有多台J-Link，可指定序列号</span>
+<span class="comment"># adapter serial "12345678"</span>
+                </pre>
+            </div>
+
+            <div class="card">
+                <h2>3. 目标芯片配置文件详解</h2>
+                <p>目标配置文件定义了CPU内核、内存布局、Flash编程算法等，使OpenOCD能够正确识别和操作目标芯片。</p>
+                <h3>3.1 基本结构</h3>
+                <pre>
+# 声明目标芯片
+<span class="keyword">set</span> CHIPNAME stm32f103c8
+
+# 选择CPU内核
+<span class="keyword">set</span> CPUTAPID 0x1ba01477
+<span class="keyword">target create</span> $_CHIPNAME.cpu cortex_m <span class="comment">-chain-position $_CHIPNAME.cpu</span>
+
+# 配置工作内存（RAM）
+<span class="keyword">$_CHIPNAME.cpu configure -work-area-phys</span> 0x20000000 <span class="comment">-work-area-size 0x5000</span>
+
+# 配置Flash存储器
+<span class="keyword">flash bank</span> $_CHIPNAME.flash stm32f1x 0x08000000 0 0 0 $_CHIPNAME.cpu
+                </pre>
+
+                <h3>3.2 核心配置模块</h3>
+                <ol>
+                    <li><strong>目标创建</strong>：使用<code>target create</code>命令实例化一个目标，并指定架构（如arm7tdmi, cortex_m）。</li>
+                    <li><strong>内存配置</strong>：定义工作区（work area）用于Flash编程时的临时缓冲区。</li>
+                    <li><strong>Flash Bank定义</strong>：使用<code>flash bank</code>命令声明Flash存储器的类型、基地址、大小及驱动。</li>
+                    <li><strong>复位与初始化</strong>：配置复位后的初始化脚本，如停止看门狗、配置时钟等。</li>
+                </ol>
+
+                <h3>3.3 示例：STM32F103C8T6配置</h3>
+                <pre>
+# target/stm32f1x.cfg 片段
+<span class="keyword"># 定义芯片名称和TAP ID</span>
+<span class="keyword">set</span> CHIPNAME stm32f103c8
+<span class="keyword">set</span> CPUTAPID 0x1ba01477
+
+<span class="keyword"># 创建Cortex-M3目标</span>
+<span class="keyword">target create</span> $_CHIPNAME.cpu cortex_m <span class="comment">-chain-position $_CHIPNAME.cpu -ap-num 0</span>
+
+<span class="keyword"># 设置RAM工作区（20KB SRAM）</span>
+$_CHIPNAME.cpu <span class="keyword">configure -work-area-phys</span> 0x20000000 <span class="comment">-work-area-size 0x5000</span>
+
+<span class="keyword"># 配置Flash：64KB，使用stm32f1x驱动</span>
+<span class="keyword">flash bank</span> $_CHIPNAME.flash stm32f1x 0x08000000 0x10000 0 0 $_CHIPNAME.cpu
+
+<span class="keyword"># 复位后初始化：停止内核，设置向量表偏移</span>
+$_CHIPNAME.cpu <span class="keyword">configure -event reset-init</span> {
+    <span class="keyword">halt</span>
+    <span class="keyword">mww</span> 0xE000ED08 0x08000000  <span class="comment"># 设置VTOR</span>
+}
+
+<span class="keyword"># 可选：启用断点和观察点</span>
+$_CHIPNAME.cpu <span class="keyword">configure -event reset-start</span> {
+    <span class="keyword">catch {</span> bp <span class="keyword">enable</span> <span class="keyword">}</span>
+}
+                </pre>
+            </div>
+        </section>
+
+        <section class="container">
+            <div class="card full-width">
+                <h2>4. 配置文件语法要点与最佳实践</h2>
+                <h3>4.1 语法规则</h3>
+                <ul>
+                    <li><strong>命令</strong>：OpenOCD配置命令通常为小写，单词间用空格分隔，例如 <code>adapter speed 1000</code>。</li>
+                    <li><strong>变量</strong>：使用<code>set</code>定义变量，通过<code>$</code>引用，如<code>set CHIPNAME stm32f1; flash bank $_CHIPNAME.flash ...</code>。</li>
+                    <li><strong>注释</strong>：以<code>#</code>开始，直到行尾。</li>
+                    <li><strong>事件绑定</strong>：使用<code>configure -event</code>将TCL脚本绑定到特定事件（如reset-init, halted）。</li>
+                </ul>
+
+                <h3>4.2 组织与复用</h3>
+                <p>为提高可维护性，建议将配置分层：</p>
+                <pre>
+# 主启动脚本 openocd.cfg
+<span class="keyword"># 加载接口配置</span>
+<span class="keyword">source</span> [find interface/jlink.cfg]
+
+<span class="keyword"># 加载目标芯片配置</span>
+<span class="keyword">source</span> [find target/stm32f1x.cfg]
+
+<span class="keyword"># 自定义初始化（可选）</span>
+<span class="keyword">init</span>
+<span class="keyword">reset halt</span>
+                </pre>
+
+                <h3>4.3 调试技巧</h3>
+                <div class="note">
+                    <strong>常见问题排查：</strong>
+                    <ul>
+                        <li>若连接失败，首先降低<code>adapter speed</code>（如100 kHz）。</li>
+                        <li>使用<code>openocd -d3 -f interface.cfg</code>开启调试输出，查看详细通信日志。</li>
+                        <li>确保<code>CPUTAPID</code>与芯片实际ID匹配（可通过扫描JTAG链获取）。</li>
+                        <li>检查物理连接：电压、引脚连接、目标板供电。</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="container">
+            <div class="card full-width">
+                <h2>5. 总结与资源</h2>
+                <p>掌握OpenOCD配置文件的编写是进行高效嵌入式调试的基础。接口配置文件是“桥梁”，目标配置文件是“地图”，二者结合才能精准控制目标芯片。</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>配置文件类型</th>
+                            <th>核心作用</th>
+                            <th>关键指令</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>接口配置</strong></td>
+                            <td>定义调试探头硬件参数，建立物理连接</td>
+                            <td><code>adapter driver</code>, <code>transport select</code>, <code>adapter speed</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>目标配置</strong></td>
+                            <td>定义芯片内部结构，提供操作接口</td>
+                            <td><code>target create</code>, <code>flash bank</code>, <code>configure -event</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>建议进一步阅读OpenOCD官方手册，并参考<code>scripts/</code>目录下的大量示例配置文件进行学习与实践。</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>公众号: 蓝海资料掘金营，微信 deep3321</p>
+        <p>© 2026 嵌入式调试专家课程 · 让硬件调试更简单</p>
+    </footer>
+</body>
+</html>

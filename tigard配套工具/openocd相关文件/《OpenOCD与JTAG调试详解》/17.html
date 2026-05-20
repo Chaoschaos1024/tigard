@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenOCD脚本编程入门：TCL语言基础</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50; /* 青草绿 */
+            --secondary-color: #2196F3; /* 天空蓝 */
+            --accent-color: #FF9800; /* 活力橙 */
+            --light-color: #FFF9C4; /* 淡鹅黄 */
+            --background-color: #E8F5E9; /* 浅草绿背景 */
+            --text-color: #333333;
+            --border-color: #81C784; /* 柔和绿边框 */
+            --code-bg: #F1F8E9;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            border: 15px double var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 100, 0, 0.1);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: var(--secondary-color);
+            border-bottom: 3px solid var(--accent-color);
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+        h3 {
+            color: var(--primary-color);
+        }
+        .content-box {
+            background-color: white;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 15px;
+            border-left: 8px solid var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        code, pre {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--code-bg);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #C8E6C9;
+            overflow-x: auto;
+            display: block;
+            margin: 15px 0;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 2px solid var(--border-color);
+            padding: 15px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--light-color);
+            color: var(--text-color);
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #F9F9F9;
+        }
+        ul, ol {
+            padding-left: 25px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .svg-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 25px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            border-radius: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .highlight {
+            background-color: var(--light-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .note {
+            background-color: #E3F2FD;
+            border-left: 6px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>OpenOCD与JTAG调试详解</h1>
+            <h2>第17讲：脚本编程入门：TCL语言基础、在OpenOCD配置文件中使用TCL</h2>
+        </header>
+
+        <div class="content-box">
+            <h2>一、课程引言</h2>
+            <p>在嵌入式调试中，<span class="highlight">OpenOCD</span> 的强大功能很大程度上得益于其灵活的脚本配置能力。这些脚本基于 <span class="highlight">TCL（Tool Command Language）</span> 语言。掌握TCL基础，能够编写和修改OpenOCD配置文件，是成为嵌入式调试高手的必经之路。本讲将带你走进TCL的世界，并展示如何在OpenOCD中运用它。</p>
+        </div>
+
+        <div class="content-box">
+            <h2>二、TCL语言核心基础</h2>
+            <p>TCL是一种解释型脚本语言，以其语法简洁、易于嵌入而闻名。它遵循“一切皆命令”的哲学。</p>
+
+            <h3>1. 基本语法与变量</h3>
+            <ul>
+                <li><strong>变量</strong>：使用 <code>set</code> 命令创建和赋值，变量名前加 <code>$</code> 进行引用。</li>
+                <li><strong>命令格式</strong>：<code>命令 参数1 参数2 ...</code></li>
+                <li><strong>注释</strong>：以 <code>#</code> 开头。</li>
+            </ul>
+            <pre>
+# TCL 基础示例
+set target_cpu "ARM Cortex-M4"  # 设置变量
+set clock_speed 168000000
+
+puts "目标CPU: $target_cpu"
+puts "时钟频率: $clock_speed Hz"</pre>
+
+            <h3>2. 控制结构</h3>
+            <p>TCL提供了常见的条件判断和循环结构。</p>
+            <pre>
+# 条件判断 if
+set voltage 3.3
+if {$voltage > 3.0} {
+    puts "电压正常，可以上电。"
+} else {
+    puts "电压过低，请检查电源。"
+}
+
+# 循环 foreach
+foreach pin {PA0 PA1 PA2 PA3} {
+    puts "配置引脚: $pin 为输出模式"
+}
+
+# 循环 for
+for {set i 0} {$i < 5} {incr i} {
+    puts "调试会话尝试次数: $i"
+}</pre>
+
+            <h3>3. 过程（函数）定义</h3>
+            <p>使用 <code>proc</code> 命令定义可重用的代码块。</p>
+            <pre>
+# 定义一个初始化GPIO的过程
+proc init_gpio {port mode} {
+    puts "初始化端口 $port 为 $mode 模式"
+    # 这里可以添加具体的硬件配置命令
+    return "端口 ${port} 初始化完成"
+}
+
+# 调用过程
+set result [init_gpio GPIOA "推挽输出"]
+puts $result</pre>
+        </div>
+
+        <div class="content-box">
+            <h2>三、TCL在OpenOCD配置文件中的应用</h2>
+            <p>OpenOCD的配置文件（<code>.cfg</code>）本质上是TCL脚本。OpenOCD扩展了许多用于调试的专用命令。</p>
+
+            <div class="svg-container">
+                <svg width="800" height="300" viewBox="0 0 800 300">
+                    <rect x="50" y="50" width="200" height="60" rx="10" fill="#4CAF50" stroke="#2E7D32" stroke-width="2"/>
+                    <text x="150" y="85" text-anchor="middle" fill="white" font-size="16" font-weight="bold">TCL核心引擎</text>
+                    <rect x="300" y="30" width="200" height="60" rx="10" fill="#2196F3" stroke="#1565C0" stroke-width="2"/>
+                    <text x="400" y="65" text-anchor="middle" fill="white" font-size="16" font-weight="bold">OpenOCD命令集</text>
+                    <rect x="550" y="50" width="200" height="60" rx="10" fill="#FF9800" stroke="#EF6C00" stroke-width="2"/>
+                    <text x="650" y="85" text-anchor="middle" fill="white" font-size="16" font-weight="bold">用户配置文件</text>
+                    <rect x="100" y="180" width="600" height="80" rx="10" fill="#FFF9C4" stroke="#F9A825" stroke-width="2"/>
+                    <text x="400" y="220" text-anchor="middle" fill="#333" font-size="16" font-weight="bold">接口配置、目标芯片定义、适配器设置、自定义调试过程</text>
+                    <path d="M150 110 L150 150 L100 150 L100 180" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+                    <path d="M400 90 L400 150 L350 150 L350 180" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+                    <path d="M650 110 L650 150 L700 150 L700 180" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+                    <text x="150" y="135" text-anchor="middle" fill="#666" font-size="12">提供语法</text>
+                    <text x="400" y="120" text-anchor="middle" fill="#666" font-size="12">提供功能</text>
+                    <text x="650" y="135" text-anchor="middle" fill="#666" font-size="12">编写逻辑</text>
+                </svg>
+                <p><em>OpenOCD配置与TCL关系架构图</em></p>
+            </div>
+
+            <h3>1. 典型配置文件结构示例</h3>
+            <pre>
+# interface.cfg - 调试适配器配置
+set ADAPTER "stlink-v2"
+source [find interface/${ADAPTER}.cfg]
+
+# 设置适配器时钟速度
+adapter speed 2000
+
+# target.cfg - 目标芯片配置
+set CHIP "stm32f4x"
+source [find target/${CHIP}.cfg]
+
+# 连接后执行的初始化脚本
+proc init_target {} {
+    # 停止目标芯片
+    halt
+    # 设置断点
+    bp 0x08000000 2 hw
+    # 复位
+    reset init
+}
+
+# 在OpenOCD连接后调用初始化
+$_TARGETNAME configure -event gdb-attach { init_target }</pre>
+
+            <h3>2. OpenOCD常用TCL命令速查表</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>命令类别</th>
+                        <th>命令示例</th>
+                        <th>功能描述</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>变量与查找</td>
+                        <td><code>set, find</code></td>
+                        <td>设置变量，查找脚本文件路径。</td>
+                    </tr>
+                    <tr>
+                        <td>适配器控制</td>
+                        <td><code>adapter speed, reset_config</code></td>
+                        <td>设置JTAG/SWD速度，配置复位行为。</td>
+                    </tr>
+                    <tr>
+                        <td>目标控制</td>
+                        <td><code>halt, resume, step, reg</code></td>
+                        <td>控制CPU运行，读取寄存器。</td>
+                    </tr>
+                    <tr>
+                        <td>内存操作</td>
+                        <td><code>mdw, mww, dump_image</code></td>
+                        <td>读写内存，保存内存镜像。</td>
+                    </tr>
+                    <tr>
+                        <td>断点与观察点</td>
+                        <td><code>bp, rbp, wp</code></td>
+                        <td>设置/删除断点，设置硬件观察点。</td>
+                    </tr>
+                    <tr>
+                        <td>事件绑定</td>
+                        <td><code>configure -event</code></td>
+                        <td>在特定事件（如gdb连接）时触发脚本。</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="content-box">
+            <h2>四、实战：编写一个自定义调试脚本</h2>
+            <p>假设我们需要一个脚本，在连接后自动检查芯片ID，并初始化系统时钟。</p>
+            <pre>
+# custom_debug.tcl
+
+proc check_chip_id {} {
+    # 读取STM32的DBGMCU_IDCODE寄存器（地址可能因系列而异）
+    set idcode [mdw 0xE0042000 1]
+    puts [format "芯片IDCODE: 0x%08X" $idcode]
+    # 简单校验（示例值，请根据实际芯片修改）
+    if {($idcode & 0xFFF) == 0x413} {
+        puts "芯片校验通过: Cortex-M4 设备识别成功。"
+        return 1
+    } else {
+        puts "错误: 芯片ID不匹配！"
+        return 0
+    }
+}
+
+proc init_system_clock {} {
+    puts "开始初始化系统时钟..."
+    # 1. 使能外部高速时钟 (HSE)
+    mww 0x40023800 0x00000001  # RCC_CR 寄存器
+    sleep 10  # 等待时钟稳定（单位毫秒，OpenOCD可能需自定义等待）
+
+    # 2. 配置PLL，将16MHz HSE倍频到168MHz (示例)
+    mww 0x40023804 0x00000002  # RCC_PLLCFGR 寄存器
+
+    # 3. 切换系统时钟到PLL输出
+    mww 0x40023808 0x00000002  # RCC_CFGR 寄存器
+
+    puts "系统时钟初始化完成 (168MHz)。"
+}
+
+# 主执行流程
+if {[check_chip_id]} {
+    init_system_clock
+    puts "目标板初始化完成，可以开始调试。"
+} else {
+    puts "目标板初始化失败，请检查硬件连接。"
+}</pre>
+
+            <div class="note">
+                <strong>使用提示：</strong> 在OpenOCD启动后，使用 <code>source custom_debug.tcl</code> 命令加载并执行此脚本，或将其内容放入你的 <code>cfg</code> 文件中。
+            </div>
+        </div>
+
+        <div class="content-box">
+            <h2>五、总结与最佳实践</h2>
+            <ul>
+                <li><strong>模块化</strong>：将不同功能的配置（接口、目标、事件）写在不同的 <code>.cfg</code> 文件中，使用 <code>source</code> 命令组织。</li>
+                <li><strong>参数化</strong>：使用TCL变量（如 <code>set ADAPTER_TYPE stlink</code>）使脚本易于适配不同硬件。</li>
+                <li><strong>错误处理</strong>：利用TCL的 <code>catch</code> 命令捕获可能失败的操作，增强脚本鲁棒性。</li>
+                <li><strong>善用事件</strong>：OpenOCD的 <code>-event</code> 机制（如 <code>gdb-attach, reset-start</code>）可以让调试流程自动化。</li>
+                <li><strong>注释清晰</strong>：为复杂的配置逻辑添加详细注释，方便日后维护和团队协作。</li>
+            </ul>
+            <p>掌握TCL脚本编程，你就能解锁OpenOCD的全部潜力，实现从简单的芯片擦写到复杂的多核调试、自动化测试等一系列高级功能。</p>
+        </div>
+
+        <footer>
+            公众号: 蓝海资料掘金营，微信 deep3321
+        </footer>
+    </div>
+</body>
+</html>

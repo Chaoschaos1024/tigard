@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenOCD与GDB协同调试详解</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50; /* 青草绿 */
+            --secondary-color: #2196F3; /* 天空蓝 */
+            --accent-color: #FF9800; /* 活力橙 */
+            --light-color: #FFF9C4; /* 淡鹅黄 */
+            --background-color: #E8F5E9; /* 浅草绿背景 */
+            --text-color: #333333;
+            --border-color: #81C784; /* 柔和绿边框 */
+            --header-bg: #1B5E20; /* 深绿 */
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .double-border-container {
+            border: 8px solid var(--border-color);
+            border-radius: 20px;
+            padding: 0;
+            background-color: white;
+            box-shadow: 0 10px 30px rgba(0, 100, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        .double-border-container::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border: 3px solid var(--secondary-color);
+            border-radius: 15px;
+            pointer-events: none;
+        }
+        header {
+            background: linear-gradient(135deg, var(--header-bg), var(--primary-color));
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            border-bottom: 5px solid var(--accent-color);
+        }
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        main {
+            padding: 30px 40px;
+        }
+        section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border-left: 6px solid var(--secondary-color);
+            background-color: #f9fdf9;
+            border-radius: 0 12px 12px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 3px dashed var(--accent-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        h3 {
+            color: var(--secondary-color);
+            margin: 15px 0 10px;
+        }
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border: 2px solid var(--border-color);
+        }
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: var(--light-color);
+        }
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 18px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            border-left: 5px solid var(--accent-color);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+        code {
+            background-color: #eef7ee;
+            color: #d63384;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+        }
+        .svg-container {
+            display: flex;
+            justify-content: center;
+            margin: 25px 0;
+        }
+        .architecture-svg {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+        }
+        .note-box {
+            background-color: #E3F2FD;
+            border-left: 5px solid var(--secondary-color);
+            padding: 18px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        footer {
+            text-align: center;
+            padding: 25px;
+            background: linear-gradient(to right, var(--header-bg), var(--primary-color));
+            color: white;
+            font-size: 1.1rem;
+            border-top: 5px solid var(--accent-color);
+            margin-top: 30px;
+        }
+        .footer-text {
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .step-number {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .command-list li {
+            font-family: 'Consolas', monospace;
+            background-color: #f5f5f5;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="double-border-container">
+        <header>
+            <h1>OpenOCD与GDB协同调试详解</h1>
+            <p class="subtitle">第15课：启动GDB、设置断点、单步执行与查看内存</p>
+        </header>
+
+        <main>
+            <section>
+                <h2>一、概述：为什么需要GDB与OpenOCD协同？</h2>
+                <p>在嵌入式系统开发中，<strong>OpenOCD</strong>作为JTAG/SWD适配器的服务器，负责与目标硬件通信。而<strong>GNU调试器(GDB)</strong>则是一个功能强大的源码级调试前端。二者协同工作，构成了一个完整的、高效的嵌入式调试环境。</p>
+                <div class="svg-container">
+                    <svg class="architecture-svg" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="50" y="100" width="150" height="80" rx="10" fill="#4CAF50" stroke="#1B5E20" stroke-width="3"/>
+                        <text x="125" y="145" text-anchor="middle" fill="white" font-size="16" font-weight="bold">开发者</text>
+                        <text x="125" y="165" text-anchor="middle" fill="white" font-size="14">(使用GDB命令)</text>
+
+                        <rect x="250" y="100" width="150" height="80" rx="10" fill="#2196F3" stroke="#0D47A1" stroke-width="3"/>
+                        <text x="325" y="145" text-anchor="middle" fill="white" font-size="16" font-weight="bold">GDB客户端</text>
+                        <text x="325" y="165" text-anchor="middle" fill="white" font-size="14">(调试前端)</text>
+
+                        <rect x="450" y="100" width="150" height="80" rx="10" fill="#FF9800" stroke="#E65100" stroke-width="3"/>
+                        <text x="525" y="145" text-anchor="middle" fill="white" font-size="16" font-weight="bold">OpenOCD服务器</text>
+                        <text x="525" y="165" text-anchor="middle" fill="white" font-size="14">(JTAG/SWD网关)</text>
+
+                        <rect x="650" y="100" width="100" height="80" rx="10" fill="#9C27B0" stroke="#4A148C" stroke-width="3"/>
+                        <text x="700" y="145" text-anchor="middle" fill="white" font-size="16" font-weight="bold">目标MCU</text>
+
+                        <path d="M200 140 L250 140" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+                        <path d="M400 140 L450 140" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+                        <path d="M600 140 L650 140" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+                        <defs>
+                            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                                <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+                            </marker>
+                        </defs>
+
+                        <text x="400" y="50" text-anchor="middle" fill="#1B5E20" font-size="20" font-weight="bold">GDB与OpenOCD协同调试架构图</text>
+                        <text x="225" y="190" text-anchor="middle" fill="#2196F3" font-size="14">GDB远程协议</text>
+                        <text x="525" y="190" text-anchor="middle" fill="#FF9800" font-size="14">JTAG/SWD物理接口</text>
+                    </svg>
+                </div>
+                <p>这种架构允许开发者在主机上使用熟悉的GDB命令，通过OpenOCD透明地控制和控制运行在目标嵌入式处理器上的程序。</p>
+            </section>
+
+            <section>
+                <h2>二、启动OpenOCD与连接GDB</h2>
+                <h3><span class="step-number">1</span> 启动OpenOCD服务器</h3>
+                <p>首先，需要根据你的目标板和调试器配置文件启动OpenOCD服务。OpenOCD将在默认的3333端口监听GDB连接。</p>
+                <pre>openocd -f interface/cmsis-dap.cfg -f target/stm32f4x.cfg</pre>
+                <p>成功启动后，终端会显示类似以下信息，表明OpenOCD已就绪，等待GDB连接。</p>
+                <pre>Info : Listening on port 3333 for gdb connections
+Info : Listening on port 6666 for tcl connections
+Info : Listening on port 4444 for telnet connections</pre>
+
+                <h3><span class="step-number">2</span> 启动GDB并连接OpenOCD</h3>
+                <p>打开另一个终端，启动交叉编译工具链中的GDB（例如<code>arm-none-eabi-gdb</code>），并指定要调试的ELF文件。</p>
+                <pre>arm-none-eabi-gdb build/my_firmware.elf</pre>
+                <p>在GDB命令行中，使用<code>target remote</code>命令连接到本地OpenOCD服务。</p>
+                <pre>(gdb) target remote localhost:3333
+Remote debugging using localhost:3333
+0x080001a0 in Reset_Handler ()</pre>
+                <p>连接成功后，GDB会暂停在程序入口点（如Reset_Handler），此时可以开始调试。</p>
+                <div class="note-box">
+                    <strong>提示：</strong> 为了获得最佳的调试体验，建议在连接后使用<code>monitor reset halt</code>命令让目标芯片处于确定的 halted 状态，并使用<code>load</code>命令将程序加载到Flash中。
+                </div>
+            </section>
+
+            <section>
+                <h2>三、核心调试操作</h2>
+                <h3>1. 设置与管理断点</h3>
+                <p>断点是调试的基础。GDB允许在函数名、行号或内存地址处设置断点。</p>
+                <ul class="command-list">
+                    <li><code>break main</code> 或 <code>b main</code>：在main函数入口设置断点。</li>
+                    <li><code>break 125</code>：在当前文件的第125行设置断点。</li>
+                    <li><code>break *0x08001234</code>：在指定的内存地址设置断点。</li>
+                    <li><code>info breakpoints</code>：列出所有已设置的断点。</li>
+                    <li><code>delete 1</code>：删除编号为1的断点。</li>
+                </ul>
+
+                <h3>2. 控制程序执行</h3>
+                <table>
+                    <thead>
+                        <tr><th>命令</th><th>缩写</th><th>功能描述</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>continue</code></td><td><code>c</code></td><td>继续运行程序，直到遇到下一个断点或程序结束。</td></tr>
+                        <tr><td><code>step</code></td><td><code>s</code></td><td>单步执行，<strong>进入</strong>函数内部。</td></tr>
+                        <tr><td><code>next</code></td><td><code>n</code></td><td>单步执行，<strong>越过</strong>函数调用（不进入函数）。</td></tr>
+                        <tr><td><code>finish</code></td><td><code>fin</code></td><td>执行完当前函数，并返回到调用它的地方。</td></tr>
+                        <tr><td><code>monitor reset halt</code></td><td>-</td><td>通过OpenOCD复位芯片并暂停（非常有用）。</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>3. 查看与修改数据</h3>
+                <p>查看变量、寄存器和内存内容是调试的关键。</p>
+                <ul class="command-list">
+                    <li><code>print variable_name</code> 或 <code>p variable_name</code>：打印变量的值。</li>
+                    <li><code>print/x variable_name</code>：以十六进制格式打印变量。</li>
+                    <li><code>info registers</code>：查看所有CPU寄存器的值。</li>
+                    <li><code>x/8wx 0x20000000</code>：从地址0x20000000开始，以字（4字节）为单位，显示8个十六进制值（<code>w</code>代表字，<code>x</code>代表十六进制）。</li>
+                    <li><code>set variable = 100</code>：修改变量的值。</li>
+                    <li><code>watch variable_name</code>：设置数据观察点，当变量被修改时暂停。</li>
+                </ul>
+                <pre>(gdb) p sensor_reading
+$1 = 1023
+(gdb) p/x sensor_reading
+$2 = 0x3ff
+(gdb) x/4hb &sensor_reading  # 以字节为单位查看内存
+0x20000400:     0xff    0x03    0x00    0x00</pre>
+            </section>
+
+            <section>
+                <h2>四、完整调试流程示例</h2>
+                <p>以下是一个从启动到分析问题的典型调试会话片段：</p>
+                <pre>
+# 终端1：启动OpenOCD
+$ openocd -f board/st_nucleo_f4.cfg
+
+# 终端2：启动GDB并连接
+$ arm-none-eabi-gdb firmware.elf
+(gdb) target remote localhost:3333
+(gdb) monitor reset halt        # 复位并暂停
+(gdb) load                      # 加载程序到Flash
+(gdb) break process_data        # 在关键函数设断点
+(gdb) continue                  # 运行
+Breakpoint 1, process_data (input=0x20000500) at src/main.c:87
+87      uint32_t sum = 0;
+(gdb) next                      # 单步
+88      for(int i=0; i<length; i++){
+(gdb) watch sum                 # 观察sum变量变化
+(gdb) continue                  # 继续，当sum被修改时会暂停
+Hardware watchpoint 2: sum
+Old value = 0
+New value = 150
+process_data (input=0x20000500) at src/main.c:89
+89          sum += input[i];
+(gdb) info registers r0 r1      # 查看特定寄存器
+r0             0x20000500       536872192
+r1             0xa              10
+(gdb) x/10xw input              # 查看输入数组内存
+0x20000500:     0x00000001      0x00000002      0x00000003 ...
+(gdb) quit                      # 退出GDB</pre>
+            </section>
+
+            <section>
+                <h2>五、常见问题与技巧</h2>
+                <table>
+                    <thead>
+                        <tr><th>问题/场景</th><th>解决方案</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>GDB连接OpenOCD失败</td><td>检查OpenOCD是否成功启动并监听3333端口（<code>netstat -an | grep 3333</code>）。</td></tr>
+                        <tr><td>断点无法设置或无效</td><td>确认程序已正确加载（<code>load</code>），且地址在Flash/RAM有效范围内。有时需要先<code>monitor reset halt</code>。</td></tr>
+                        <tr><td>单步执行时程序“飞走”</td><td>可能中断被错误使能。尝试<code>monitor halt</code>后重新设置断点，或检查向量表是否正确。</td></tr>
+                        <tr><td>查看外设寄存器</td><td>使用<code>x/4xw 0x40021000</code>直接查看内存映射的外设寄存器地址（需参考芯片手册）。</td></tr>
+                        <tr><td>提高调试效率</td><td>将常用命令序列写入<code>~/.gdbinit</code>文件，或使用GDB的TUI模式（<code>tui enable</code>）同时查看源码和寄存器。</td></tr>
+                    </tbody>
+                </table>
+                <div class="note-box">
+                    <strong>高级技巧：</strong> OpenOCD的<code>monitor</code>命令非常强大，可以直接在GDB中调用。例如，<code>monitor flash write_image erase firmware.elf</code>可以编程Flash，<code>monitor mdw 0x20000000 10</code>可以查看内存，无需离开GDB环境。
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p class="footer-text">公众号：蓝海资料掘金营，微信 deep3321</p>
+            <p>© 《OpenOCD与JTAG调试详解》课程 - 嵌入式系统专家撰写</p>
+        </footer>
+    </div>
+</body>
+</html>
