@@ -2,7 +2,7 @@
 
 ## 简介
 
-本分支Tigard添加了中文的**说明书**，以及部分**软件**和**脚本**。
+本分支为Tigard添加了中文的**说明书**，以及部分**软件**和**脚本**。
 
 Tigard 是一款基于 **FT2232 芯片** 的多功能调试器，具备以下特点：
 
@@ -49,15 +49,17 @@ Tigard 是一款基于 **FT2232 芯片** 的多功能调试器，具备以下特
 ### 电平转换
 
 FT2232 仅支持 **3.3V** 外部电压。为保证兼容性并保护芯片，Tigard 使用了 **74HC245 电平转换芯片**，通过开关控制转换侧电压，以适配不同设备。
-需要注意的是开关上的VTGT档，其他几个档位是tigard设置电平转换ic的同时，在VTGT引脚上输出对应设置的电压，相当于可以外供电，VTGT档位会直接使用VTGT引脚上的电压给电平转换芯片供电，千万小心，过流和电压不同都有可能烧掉你的tigard或者调试板。
-![电平切换开关](image/image36.png){width=25%}
+需要注意的是开关上的 VTGT 档，其他几个档位是Tigard设置电平转换ic的同时，在 VTGT 引脚上输出对应设置的电压，相当于可以外供电，VTGT 档位会直接使用 VTGT 引脚上的电压给电平转换芯片供电，千万小心，过流和电压不同都有可能烧掉你的tigard或者调试板。
+
+![电平切换开关](image/image36.png)
 
 
 ### 模式切换开关
 
 板载开关用于在 **SWD / JTAG** 之间切换，同时也影响 I2C 和 SPI。其原理是短接 BDBUS1 和 BDBUS2。
-MODE开关不影响串口的使用，但是如果一直连不上swd或者jtag上面的设备，最好是检查下这个开关是否在正确的档位。
-![模式切换开关](image/image37.png){width=25%}
+MODE开关不影响串口的使用，但是如果一直连不上 swd 或者 jtag 接口上面的设备，最好是检查下这个开关是否在正确的档位。
+
+![模式切换开关](image/image37.png)
 
 ### JTAG 与 SPI 的相似性
 
@@ -68,7 +70,7 @@ MODE开关不影响串口的使用，但是如果一直连不上swd或者jtag上
 | TCK | SCK | 时钟 |
 | TMS | CS | 输出 |
 
-> 有趣的是：JTAG 和 SPI 都是 **输入量 = 输出量** 的协议。基本上可以说JTAG是SPI的一个修改版本，基本上就是加了一个状态机。
+> 有趣的是：JTAG 和 SPI 都是 **输入量 = 输出量** 的协议。JTAG 可以看作是 SPI 的一种变体，核心区别在于增加了状态机。
 
 ### SWD 模拟
 
@@ -110,7 +112,7 @@ Tigard 的串口引出为 **9-pin 接口**，包含 DTR 等信号（廉价工具
 
 ---
 
-## 五、JTAG 兼容性
+## 五、接口兼容性
 
 FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功连接：
 
@@ -123,12 +125,14 @@ FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功
 
 > 基本上，该接口对任意 JTAG 设备都管用。
 
+FT2232 的 SWD 接口也不遑多让，已经在 stm32 以及树莓派 pico 上进行测试，同样成功。
+
 ---
 
 ## 六、Top JTAG Probe（TJP）使用教程
 
 > 这是一款 **JTAG 逆向软件**，官网：[http://www.topjtag.com/probe/](http://www.topjtag.com/probe/)  
-> 非免费，但有试用期。JTAG 最初用于边界扫描，后续扩展出烧录等功能，该软件利用该特性，直接调用芯片的ic位置。
+> 非免费，但有试用期。JTAG 最初用于边界扫描，后续扩展出烧录等功能，该软件利用 JTAG 的边界扫描功能，直接读取芯片内部寄存器状态。
 
 ![TJP软件截图](image/image6.png)
 
@@ -204,12 +208,12 @@ FT2232 的 JTAG 接口久经考验。Tigard 的 JTAG 兼容性极佳，已成功
 
 ### openocd简介
 
-openocd
+OpenOCD (Open On-Chip Debugger) 是一个开源的调试器软件，支持多种调试器和目标芯片
 
 
 ### openocd的安装
 
-请下载最新的MSYS2，或者是使用本项目中**\tigard配套工具\openocd相关文件**下的“msys2-用于安装openocd.exe”，安装该软件。
+请下载最新的 MSYS2 ，或者是使用本项目中**\tigard配套工具\openocd相关文件**下的“ msys2-用于安装openocd.exe ”，安装该软件。
 安装完成会显示一个命令行界面，输入指令：
 
 ```bash
@@ -217,7 +221,7 @@ pacman -S mingw-w64-x86_64-openocd
 ```
 会有如下输出
 ![MSYS2输出](image/image47.png)
-安装完成后输入以下指令查看openocd的位置
+安装完成后输入以下指令查看 openocd 的位置
 ```bash
 find /ucrt64 -name "openocd.exe" 2>/dev/null
 find /mingw64 -name "openocd.exe" 2>/dev/null
@@ -226,7 +230,7 @@ find /mingw64 -name "openocd.exe" 2>/dev/null
 ```bash
 /mingw64/bin/openocd.exe
 ```
-打开MSYS的安装文件夹，进而寻找上面这个目录，将整个目录复制下来，比如我复制下来就是
+打开 MSYS 的安装文件夹，进而寻找上面这个目录，将整个目录复制下来，比如我复制下来就是
 **D:\program\msys2\mingw64\bin**
 将该目录添加至环境变量
 1. 右键点击 **"此电脑"** → **"属性"** → **"高级系统设置"** → **"环境变量"**
@@ -238,19 +242,19 @@ find /mingw64 -name "openocd.exe" 2>/dev/null
 
 **\msys2\mingw64\share\openocd\scripts\interface**
 
-	该文件夹用于存储烧录器的相关配置文件，请将本项目下的**tigard配套工具\openocd相关文件**中的三个配置文件放置于以上的文件夹中，会覆盖掉原来的一个tigard.cfg，我提供的版本是去掉了对设备ID的匹配，也可以兼容其他ID的Tigard
+	该文件夹用于存储烧录器的相关配置文件，请将本项目下的**tigard配套工具\openocd相关文件**中的三个配置文件放置于以上的文件夹中，会覆盖掉原来的一个 tigard.cfg ，我提供的版本是去掉了对设备ID的匹配，也可以兼容其他ID的Tigard
 	
 **\msys2\mingw64\share\openocd\scripts\target**
 
-	被调试的芯片的cfg文件都在这，新添加的芯片的配置文件请添加至此处，其中也包含了大量的ic，可以做参考
+	被调试的芯片的 cfg 文件都在这，新添加的芯片的配置文件请添加至此处，其中也包含了大量的 ic ，可以做参考
 	
 ### 打个驱动
 
-openocd为了更好的性能选择更为底层的驱动程序，也就是libusb或者Winusb，而非默认的FTDI提供的VCP程序
-在配套工具文件夹下，我提供了Zadig，一个给这类设备更换驱动的小软件，按照下面步骤来吧
+openocd为了更好的性能选择更为底层的驱动程序，也就是 libusb 或者 Winusb ，而非默认的 FTDI 提供的 VCP 程序
+在配套工具文件夹下，我提供了 Zadig，一个给这类设备更换驱动的小软件，按照下面步骤来吧
 1. 以管理员身份运行 zadig.exe
 2. 在菜单栏点击 Options -> List All Devices
-3. 在下拉列表中，找到你的 Tigard 设备。它可能会显示为 Tigard (Interface 1)、USB Serial Converter A 或类似的名字，通常有不止一个选项，需要逐个检查
+3. 在下拉列表中，找到 Tigard 设备。它可能会显示为 Tigard (Interface 1)、USB Serial Converter A 或类似的名字，通常有不止一个选项，需要逐个检查
     > 小技巧：你可以**插拔**一下设备，看列表中哪个设备会随之出现或消失，那就是它了
 4. 选中尾缀为**interface1**的设备后，看右边的绿色箭头。把目标驱动设置为 WinUSB (或者 libusb / libusbK)
 5. 点击 "Replace Driver" 按钮，等待操作完成
@@ -259,14 +263,14 @@ openocd为了更好的性能选择更为底层的驱动程序，也就是libusb�
 	
 ### 硬件连接
 
-在这里使用tigard搭配树莓派pico来进行测试，pico是SWD接口，我们要做少量调整
-1. 将Tigard的Mode开关调整至SWD模式
-2. 将Tigard的电压开关调整至3.3V
-3. 接线请参考板子背面的表格，连接SWCLK以及SWDIO，而且不要忘记共地
+在这里使用 Tigard 搭配树莓派 pico 来进行测试， pico 是 SWD 接口，我们要做少量调整
+1. 将 Tigard 的 Mode 开关调整至SWD模式
+2. 将 Tigard 的电压开关调整至3.3V
+3. 接线请参考板子背面的表格，连接 SWCLK 以及 SWDIO ，而且不要忘记共地
 
 ![背部](image/image49.png)
 
-4. 使用数据线单独链接tigard和树莓派pico
+4. 使用数据线单独链接 Tigard 和树莓派 pico 
 
 ### 使用openocd
 
@@ -277,11 +281,12 @@ openocd -f interface/tigard-swd.cfg -f target/rp2040.cfg
 成功识别如下图
 
 ![openocd](image/image50.png)
-openocd类似一个底层驱动将会一直运行，如何连接和调用请参考**tigard配套工具\openocd相关文件\《OpenOCD与JTAG调试详解》**下的相关文件
+
+openocd 类似一个底层驱动将会一直运行，如何连接和调用请参考**tigard配套工具\openocd相关文件\《OpenOCD与JTAG调试详解》**下的相关文件
 
 ---
 
-## 七、Linux 下的 urjtag
+## 八、Linux 下的 urjtag
 
 ### 安装
 
@@ -315,26 +320,31 @@ detect                                            # 检测设备
 示例使用 ATmega32u4（Arduino Leonardo），该芯片不在 urjtag 器件库中，但 ID 可检测到。
 
 后续指令（如 `initbus ejtag`、`detectflash`、`readmem`、`writemem`）因 urjtag 缺乏维护，目前默认的安装包是2007年的版本，在现代 Linux 系统上存在兼容性问题。在 Ubuntu、Kali、Raspbian、Debian 上测试均遇到相同报错。
-在自行编译最新版本的urjtag（2021.03版本）之后，这些问题仍然存在，所以建议使用其他软件，比如openocd
+在自行编译最新版本的 urjtag（2021.03版本）之后，这些问题仍然存在，所以建议使用其他软件，比如openocd
 
 > 换用老内核 Linux 可能解决，但建议使用其他工具。
 
 ---
 
-## 八、烧录 SPI Flash / EEPROM
+## 九、烧录 SPI Flash / EEPROM
 
 Tigard 板载 **2×4 排针**，专为 SPI Flash 和 EEPROM 设计，引脚正对应各种8脚格式的存储IC。
 **SPI Flash的引脚定义**
-![SPI FLASH](image/image41.png){width=25%}
+
+![SPI FLASH](image/image41.png)
+
 **EEPROM的引脚定义**（同组排针，丝印在**底部**）
-![EEPROM](image/image40.png){width=25%}
+
+![EEPROM](image/image40.png)
+
 ### SPI Flash 烧录（推荐使用 flashrom）
 
 #### Windows 准备
 
-1. 下载 flashrom（含 zadig.exe）
+1. 打开随附的 flashrom（也含 zadig.exe）
 2. 打开 zadig.exe → Options → List all devices
 3. 选择 **Tigard (Interface 1)** → Install Driver
+
 ![SPI Flash](image/image21.png)
 
 #### 常用命令
@@ -384,16 +394,18 @@ pip install pyftdi
 #### 运行结果
 
 成功写入并读出一段数据。
+
 ![EEPROM](image/image28.png)
 
 #### I2C 地址计算
 
 EEPROM 的地址由地址引脚（A0、A1、A2）的电平决定。需查阅芯片数据手册，测量实际电平后计算 I2C 地址。
+>  以 24LC512 为例，A0/A1/A2 接地时地址为 0x50
 
 ![EEPROM](image/image29.png)
 ---
 
-## 九、烧录 AVR 单片机
+## 十、烧录 AVR 单片机
 
 以 **Arduino Leonardo**（主控 ATmega32u4）为例。
 
@@ -423,7 +435,7 @@ EEPROM 的地址由地址引脚（A0、A1、A2）的电平决定。需查阅芯�
 ![AVR](image/image32.png)
 ---
 
-## 十、小Hack
+## 十一、小Hack
 
 板子背面有两个没有贴任何东西的0805焊盘
 - ISO焊盘，默认中间有走线短接，用刀切断之后，排针就不再向外供电了，正面电压开关自此只做参考电压为电平转换芯片供电
@@ -436,7 +448,7 @@ EEPROM 的地址由地址引脚（A0、A1、A2）的电平决定。需查阅芯�
 
 ### Cortex Debug (10针) 接口
 
-![CORTEX](image/image42.png){width=25%}
+![CORTEX](image/image42.png)
 
 该Cortex Debug 10针连接器同时支持JTAG和Serial Wire信号。对于基于Cortex-M处理器的设备，您可以将调试器配置为JTAG或Serial Wire（SWD）模式
 以下内容来自ARM的文档
@@ -476,7 +488,7 @@ SWD模式是JTAG端口的一种不同工作模式，仅使用两个引脚进行�
 
 ### LA接口和IIC接口
 
-![LA port](image/image43.png){width=25%}
+![LA port](image/image43.png)
 
 ### LA接口
 
